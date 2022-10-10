@@ -1,0 +1,407 @@
+<?php
+
+namespace App\Http\Controllers\Api\CRM;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use App\Providers\RouteServiceProvider;
+use Illuminate\Foundation\Auth\AuthenticatesUsers;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
+use App\Models\PasswordReset;
+use App\Models\Email;
+use App\Models\CustomerMaster;
+use App\Models\CustomerSecurity;
+use App\Models\CustomerTelecom;
+use App\Models\CustomerAddress;
+use App\Models\CustomerInfo;
+use App\Models\CustomerRegisterotp;
+use App\Models\Coupon;
+use App\Models\CustomerCoupon;
+use Illuminate\Support\Str;
+use Validator;
+use Mail;
+
+class CrmCustomerController extends Controller
+{
+    public function insert_customer(Request $request)
+    {
+        $ph = ['usr_telecom_value'=>[$request->phone_number]];
+        $validator = Validator::make($request->all(), [
+            'unique_id'=>['required','numeric'],
+            'name' => ['required','max:255'],
+            'country_code' => ['required','max:20'],
+            'email' => ['required','nullable','email','max:255','unique:usr_mst,username'],
+            'longitude'=>['required'],
+            'latitude'=>['required'],
+            'zipcode'=>['required'],
+            'street'=>['nullable'],
+            'type'=>['required','in:crm,odoo'],
+            'phone_number'=>['required','nullable','min:7,12','unique:usr_telecom,usr_telecom_value']
+        ]);
+
+
+        $input = $request->all();
+
+        if ($validator->passes()) {
+            
+            $invited_by='';
+            $uiid_odoo= $uiid_crm='';
+            if($request->type=="odoo")
+            {
+                $uiid_odoo= $request->unique_id;
+            }
+            else
+            {
+                $uiid_crm= $request->unique_id;
+            }
+            // if($request->ref_code)
+            // {
+            //     $invite=CustomerMaster::where('ref_code',$request->ref_code)->first();
+            //     if($invite)
+            //     {
+            //     $invited_by = $invite->id;
+            //     $reward = Reward::where('is_active',1)->where('ord_type','cashback')->where('is_deleted',0)->first();
+            //     if($reward->rwd_type==1 || $reward->rwd_type==1)
+            //         {
+            //             $typ_pts = $reward->rewardType_register()->points;
+            //            if($typ_pts!='')
+            //            {
+            //                $credit_value = $typ_pts * $reward->point_val;
+            //            }
+            //            else
+            //            {
+            //                $credit_value =1 * $reward->point_val;
+            //            }
+            //            $cashback_reward_invite = CustomerWallet_Model::create(['user_id'    =>  $invited_by,
+            //                                               'source_id'  =>  $reward->id,
+            //                                               'source'     =>  'Reward',
+            //                                               'credit'     =>  $credit_value,
+            //                                               'is_active'  =>  1,
+            //                                               'is_deleted' =>  0,
+            //                                               'created_at'    =>date("Y-m-d H:i:s"),
+            //                                               'updated_at'    =>date("Y-m-d H:i:s")]);
+            //         }
+            //     }
+            // }
+          $email = $request->email;
+          //return $email;die;
+          $random = Str::random(6);
+          $master =  CustomerMaster::create(['org_id' => 1,
+                'username' => $request->email,
+                'ref_code' => $random,
+                'invited_by'=>$invited_by,
+                'crm_unique_id'=>$uiid_crm,
+                'odoo_id'=>$uiid_odoo,
+                'usr_platform'=>$request->type,
+                'is_active'=>1,
+                'is_deleted'=>0,
+                'is_approved'=>1,
+                'created_at'=>date("Y-m-d H:i:s"),
+                'updated_at'=>date("Y-m-d H:i:s")]);
+          $masterId = $master->id;
+
+          if($request->hasFile('profile_img'))
+            {
+            $file=$request->file('profile_img');
+            $extention=$file->getClientOriginalExtension();
+            $filename=time().'.'.$extention;
+            $file->move(('storage/app/public/customer_profile/'),$filename);
+            }
+            else
+            {
+                $filename='';
+            }
+
+           $info = CustomerInfo::create(['org_id' => 1,
+           'first_name' => $request->name,
+           'user_id' => $masterId,
+           'usr_role_id' => 5,
+           'profile_image'=>$filename,
+           'is_active'=>1,
+           'is_deleted'=>0,
+           'created_at'=>date("Y-m-d H:i:s"),
+           'updated_at'=>date("Y-m-d H:i:s")]);
+
+           $pwd_random = Str::random(8);
+
+           $security = CustomerSecurity::create(['org_id' => 1,
+           'password_hash' => Hash::make($pwd_random),
+           'user_id' => $masterId,
+           'is_active'=>1,
+           'is_deleted'=>0,
+           'created_at'=>date("Y-m-d H:i:s"),
+           'updated_at'=>date("Y-m-d H:i:s")]);
+
+           if($request->email)
+           {
+           $telecom_email = CustomerTelecom::create(['org_id' => 1,
+           'user_id' => $masterId,
+           'usr_telecom_typ_id'=>1,
+           'country_code'=>'',
+           'usr_telecom_value'=>$request->email,
+           'is_active'=>1,
+           'is_deleted'=>0,
+           'created_at'=>date("Y-m-d H:i:s"),
+           'updated_at'=>date("Y-m-d H:i:s")]);
+           $email_tele=$telecom_email->id;
+
+           CustomerMaster::where('id',$masterId)->update([
+               'email'=>$email_tele
+           ]);
+          }
+          if($request->phone_number)
+           {
+           $telecom_ph = CustomerTelecom::create(['org_id' => 1,
+           'user_id' => $masterId,
+           'usr_telecom_typ_id'=>2,
+           'country_code'=>$request->country_code,
+           'usr_telecom_value'=>$request->phone_number,
+           'is_active'=>1,
+           'is_deleted'=>0,
+           'created_at'=>date("Y-m-d H:i:s"),
+           'updated_at'=>date("Y-m-d H:i:s")]);
+           $ph_tele=$telecom_ph->id;
+
+           CustomerMaster::where('id',$masterId)->update([
+               'phone'=>$ph_tele
+           ]);
+
+           }
+
+          $address= CustomerAddress::create(['org_id'=>1,
+            'user_id'=>$masterId,
+            'usr_addr_typ_id'=>1,
+            'address_1'=>$request->street,
+            'pincode'=>$request->zipcode,
+            'longitude'=>$request->longitude,
+            'latitude'=>$request->latitude,
+            'is_active'=>1,
+            'is_default'=>1,
+            'is_deleted'=>0,
+            'created_at'=>date("Y-m-d H:i:s"),
+            'updated_at'=>date("Y-m-d H:i:s")
+            ]);
+           
+           CustomerRegisterotp::where('country_code',$request->country_code)->where('phone_number',$request->phone_number)->where('is_active',1)->where('is_deleted',0)->update(['status'=>0]);
+         
+        //     $resetLink = base64_encode(rand(100000, 999999) . 'resetpassword' . time() . '1');
+        //     $resetLink = urlencode($resetLink);
+        //     $currTime = date('Y-m-d H:i:s');
+        //     $data = array('active_link' => $resetLink, 'email_verified_at' => $currTime);
+            
+        //     $update = RegisterationToken::create(['user_id'=>$masterId,'user_type'=>'customer','email'=>$request->email,'token'=>$resetLink]);
+        //      $link = url('/customer/account/verification/' . $resetLink);
+        //     // $msg = Email::get_account_verification_message($link); 
+            
+        //  //  return $email;die;
+        //     $data['data'] = array("content"=>"Test",'link'=>$link);
+        //     $var = Mail::send('emails.verification_email', $data, function($message) use($data,$email) {
+        //     $message->from(getadmin_mail(),'MJS');    
+        //     $message->to($email);
+        //     $message->subject('Email Verification');
+        //     });
+        
+        
+        
+                // $user_name  = $request->name;
+                
+                // $email = $request->email;
+                // $data['data'] = array("content"=>"Test",'user_name'=>$user_name);
+                // $var = Mail::send('emails.account_success_msg', $data, function($message) use($data,$email) {
+                // $message->from(getadmin_mail(),'BigBasket');    
+                // $message->to($email);
+                // $message->subject('Registration Success');
+                // });
+
+                
+           
+           // print_r($msg); die();
+            // if ($update) Email::sendEmail(geAdminEmail(), $post->email, 'Reset Password', $msg);
+            
+            //notification
+            $from   = 1; 
+            $utype  = 3;
+            $to     = 1;
+            $ntype  = 'new_customer';
+            $title  = 'New Customer';
+            $desc   = 'New customer has been registered';
+            $refId  = $masterId;
+            $reflink = 'admin/customer';
+            $notify  = 'admin';
+            addNotification($from,$utype,$to,$ntype,$title,$desc,$refId,$reflink,$notify);
+        //endnotification
+        
+           $customer_email=$request->email;
+           $data['data'] = array("customer_name"=>$request->name,'phone'=>$request->country_code.$request->phone_number,'title'=>'Account Activated','message'=>'Your account has been activated.You can access your account using your mobile number: +'.$request->country_code." ".$request->phone_number,'customer_id'=>$masterId);
+                                    $var = Mail::send('emails.customer_activate', $data, function($message) use($data,$customer_email) {
+                                    $message->from(getadmin_mail(),geSiteName());    
+                                    $message->to($customer_email);
+                                   // $message->cc(['aleenaantony1020@gmail.com']); //myjewelleryshopper@gmail.com
+                                    $message->subject('Account Activated');
+                                    });
+           return response()->json(['httpcode'=>200,'success'=>'Successfully registered!','primary_key'=>$masterId]);
+
+        }
+        return response()->json(['httpcode'=>'400','status'=>'error','error'=>$validator->errors()->all()]);
+    }
+
+    public function offerlist(Request $request)
+    {
+        $data       =   $request->all(); 
+        $post       =   (object)$request->post();
+        $getcoupons = Coupon::getAllCoupons();
+        $cp_list = [];
+        if(count($getcoupons)>0)
+        {
+            foreach($getcoupons as $rows)
+            {
+                $list['coupon_id']      = $rows['id'];
+                $list['cpn_title']      = $rows['cpn_title'];
+                $list['cpn_desc']       = $rows['cpn_desc'];
+                $list['cat_name']       = $rows['cat_name'];
+                $list['subcat_name']    = $rows['subcat_name'];
+                $list['purchase_type']  = $rows['purchase_type'];
+                $list['purchase_number'] = $rows['purchase_number'];
+                $list['purchase_amount'] = $rows['purchase_amount'];
+                $list['ofr_value_type']  =   $rows['ofr_value_type'];
+                $list['ofr_value']       =   $rows['ofr_value']; 
+                $list['ofr_type']        =   $rows['ofr_type']; 
+                $list['ofr_code']        =   $rows['ofr_code']; 
+                $list['ofr_min_amount']  =   $rows['ofr_min_amount']; 
+                $list['validity_type']   =   $rows['validity_type'];
+                $list['valid_from']      =   $rows['valid_from'];
+                $list['valid_to']        =   $rows['valid_to'];
+                $list['valid_days']      =   $rows['valid_days']; 
+                if($rows['image']){$list['image']=config('app.storage_url').$rows['image'];}
+                else
+                {$list['image']=false;}
+                $list['is_active']      =   $rows['is_active']; 
+                $list['is_deleted']     =   $rows['is_deleted']; 
+                $cp_list[] = $list;
+            }
+        }
+        return ['httpcode'=>200,'status'=>'success','message'=>'Offers List','data'=>$cp_list];
+    }
+    
+    public function update_customer(Request $request)
+    {
+        $uniq_id    =   $request->unique_id;
+        if($request->type=='odoo')
+        {
+            $users      =   CustomerMaster::where('odoo_id',$uniq_id)->where('usr_platform',$request->type)->first();
+        }
+        else
+        {
+            $users      =   CustomerMaster::where('crm_unique_id',$uniq_id)->where('usr_platform',$request->type)->first();
+        }
+        
+        if(!$users)
+        {
+          return ['httpcode'=>404,'status'=>'error','message'=>'Not found'];  
+        }
+        
+        
+        $validator = Validator::make($request->all(), [
+            'unique_id'=>['required','numeric'],
+            'name' => ['required','max:255'],
+            'country_code' => ['nullable','max:20'],
+            'email' => ['required','nullable','email','max:255','unique:usr_mst,username,'.$users->id],
+            'longitude'=>['nullable'],
+            'latitude'=>['nullable'],
+            'zipcode'=>['nullable'],
+            'street'=>['nullable'],
+            'type'=>['required','in:crm,odoo'],
+            'phone_number'=>['nullable','min:7,12','unique:usr_telecom,usr_telecom_value,'.$users->id.',user_id']
+        ]);
+
+
+        $input = $request->all();
+
+        if ($validator->passes()) {
+            
+            $masterId = $users->id;
+            
+            $master =  CustomerMaster::where('id',$masterId)->update(['username' => $request->email,
+                'updated_at'=>date("Y-m-d H:i:s")]);
+         
+
+           $info = CustomerInfo::where('user_id',$masterId)->update([
+           'first_name' => $request->name,
+           'updated_at'=>date("Y-m-d H:i:s")]);
+
+          
+
+           if($request->email)
+           {
+           $telecom_email = CustomerTelecom::where('user_id',$masterId)->update(['org_id' => 1,
+           'usr_telecom_typ_id'=>1,
+           'country_code'=>'',
+           'usr_telecom_value'=>$request->email,
+           'updated_at'=>date("Y-m-d H:i:s")]);
+         //  $email_tele=$telecom_email->id;
+
+          
+          }
+          if($request->phone_number)
+           {
+           $telecom_ph = CustomerTelecom::where('user_id',$masterId)->update([
+           'usr_telecom_typ_id'=>2,
+           'country_code'=>$request->country_code,
+           'usr_telecom_value'=>$request->phone_number,
+           'updated_at'=>date("Y-m-d H:i:s")]);
+           //$ph_tele=$telecom_ph->id;
+
+        //   CustomerMaster::where('id',$masterId)->update([
+        //       'phone'=>$ph_tele
+        //   ]);
+
+           }
+
+          $address= CustomerAddress::where('user_id',$masterId)->update([
+            'usr_addr_typ_id'=>1,
+            'address_1'=>$request->street,
+            'pincode'=>$request->zipcode,
+            'longitude'=>$request->longitude,
+            'latitude'=>$request->latitude,
+            'updated_at'=>date("Y-m-d H:i:s")
+            ]);
+            
+            return ['httpcode'=>200,'status'=>'success','message'=>'Customer updated successfully'];
+            
+        }
+        else
+        {
+            return response()->json(['httpcode'=>'400','status'=>'error','error'=>$validator->errors()->all()]);
+        }
+    }
+    
+    public function odoo_delete_customer(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'unique_id'=>['required','numeric'],
+            'type'=>['required','in:odoo']
+        ]);
+
+
+        $input = $request->all();
+        if ($validator->passes()) {
+            
+            $users      =   CustomerMaster::where('odoo_id',$request->unique_id)->where('usr_platform',$request->type)->first();
+            if($users)
+            {
+                $delete_mst = CustomerMaster::where('id',$users->id)->update(['is_deleted'=>1,'updated_at'=>date("Y-m-d H:i:s")]);
+                $info_delete = CustomerInfo::where('user_id',$users->id)->update(['is_deleted' =>1,'updated_at'=>date("Y-m-d H:i:s")]);
+                return ['httpcode'=>200,'status'=>'success','message'=>'Customer deleted successfully'];
+            }
+            else
+            {
+                return ['httpcode'=>404,'status'=>'error','message'=>'Not found'];
+            }
+        }
+        else
+        {
+            return response()->json(['httpcode'=>'400','status'=>'error','error'=>$validator->errors()->all()]);
+        }
+    }
+}

@@ -1,0 +1,344 @@
+<?php
+
+namespace App\Http\Controllers\Seller;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Validation\Rule;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Intervention\Image\Facades\Image;
+use Session;
+use DB;
+use App\Models\Auction;
+use App\Models\AuctionHist;
+use App\Models\Category;
+use App\Models\Store;
+
+use App\Models\Admin;
+
+
+use App\Rules\Name;
+use Validator;
+
+class AuctionController extends Controller
+{
+    /**
+     * Create a new controller instance.
+     *
+     * @return void
+     */
+    public function __construct()
+    {
+        $this->middleware('auth:seller');
+    }
+   
+    
+    // user roles and modules
+    
+    public function auctions()
+        { 
+        $data['title']              =   'Auctions';
+        $data['menu']               =   'auctions';
+        $data['auctions']              =   Auction::getAuctions(auth()->user()->id);
+        // dd($data);
+        return view('seller.auctions.list',$data);
+        }
+
+
+
+          public function logAuction($acn_id)
+        { 
+        $data['title']              =   'Auction Logs';
+        $data['menu']               =   'auction-log';
+        $data['auctions']              =   Auction::getAuctionData($acn_id);
+        $data['log']                = AuctionHist::getLog($acn_id);
+        $data['acn_id']             = $acn_id;
+    
+        // dd($data);
+ 
+         return view('seller.auctions.logs',$data);
+        }
+
+                public function auctionCreate()
+        { 
+        $data['title']              =   'Create Auction';
+        $data['menu']               =   'create-auction';
+        $data['language']      =    DB::table('glo_lang_lk')->where('is_active', 1)->get();
+        $data['categories']      =   Category::where('is_active',1)->where(function ($query) { $query->where('is_deleted', '=', NULL)->orWhere('is_deleted', '=', 0);})->get();
+        $data['sellers']      =    Store::where('is_active',1)->where(function ($query) { $query->where('is_deleted', '=', NULL)->orWhere('is_deleted', '=', 0);})->get();
+        // dd($data);
+        return view('admin.benefits.coupons.create',$data);
+        }
+
+
+           public function auctionStatus(Request $request)
+        {
+        $input = $request->all();
+        
+        if($input['id']>0) {
+        $deleted =  Auction::where('id',$input['id'])->update(array('is_active'=>$input['status']));
+        
+        return '1';
+        }else {
+        
+        return '0';
+        }
+        
+        }
+
+
+        public function auctionDelete(Request $request)
+        {
+        $input = $request->all();
+        
+        if($input['id']>0) {
+        $deleted =  Auction::where('id',$input['id'])->update(array('is_deleted'=>1,'is_active'=>0));
+        Session::flash('message', ['text'=>'Auction deleted successfully.','type'=>'success']);
+        return true;
+        }else {
+        Session::flash('message', ['text'=>'Auction failed to delete.','type'=>'danger']);
+        return false;
+        }
+
+        }
+               public  function wordlimit($str, $limit=100, $strip = false) {
+            $str = ($strip == true)?strip_tags($str):$str;
+            if (strlen ($str) > $limit) {
+                $str = substr ($str, 0, $limit - 3);
+                return (substr ($str, 0, strrpos ($str, ' ')).'...');
+            }
+            return trim($str);
+        }
+
+             public function auctionfilter(Request $request)
+        {
+            $input = $request->all();
+            $startdate = $input['startdate'];
+            $enddate = $input['enddate'];
+            $auctions = Auction::getAuctions(auth()->user()->id);
+
+
+            if($auctions && count($auctions) > 0) {
+            $acn_html = "";
+            foreach($auctions as $row) {
+
+                        $valid_till = date('Y-m-d', strtotime($row['auct_end']));
+                        $valid_from = date('Y-m-d', strtotime($row['auct_start']));
+                        $prod_img=url('storage/app/public/product/'.$row['product_img']);
+                        if($row['is_active'] ==1){ $actv= "Active"; $chkd= "checked"; }else{ $actv="Inactive"; $chkd= ""; }
+                     
+                          if($startdate !="" && $enddate !="") {
+
+                            // if((strtotime($startdate) <= strtotime($valid_from) || strtotime($startdate) <= strtotime($valid_till)) && (strtotime($enddate) <= strtotime($valid_till) || strtotime($enddate) >= strtotime($valid_from)) )
+
+                               if((strtotime($startdate) <= strtotime($valid_from) || strtotime($startdate) <= strtotime($valid_till)) && (strtotime($enddate) >= strtotime($valid_from) ) ) {
+
+                                
+                            $acn_html .='<tr>
+                                  <td class="align-middle select-checkbox" id="moduleid" data-value="'.$row['id'].'">
+                                    <label class="custom-control custom-checkbox">
+
+                                    </label>
+                                  </td>
+                                  <td class="align-middle" >
+                                    <div class="d-flex">
+                                    <p>'.$row['auction_code'].'</p>
+                                  </div>
+                                  </td>
+
+                                  <td class="align-middle" >
+                                      
+                                      <div class="d-flex">';
+
+                                      if($row['product_img']) {
+                               $acn_html .='<span class="avatar brround avatar-md d-block" style="background-image: url('.$prod_img.')"></span>';
+                                      }else {
+                                  $acn_html .='<span class="avatar brround avatar-md d-block" ></span>';
+                                      }
+                                  
+                              
+                                     $acn_html .=' <div class="ml-3 mt-1">
+                                        <h6 class="mb-0 font-weight-bold">'.$row['product_name'].'</h6>
+                                      </div>
+                                    </div>
+                                  
+                                  </td>
+                                  <td class="align-middle" >
+                                    <div class="d-flex">
+                                    <p>'.$this->wordlimit($row['auct_desc'], 0, 20).'</p>
+                                  </div>
+                                  </td>
+                                  <td class="align-middle" >
+                                    <div class="d-flex">
+                                      <p>'.date('Y-m-d', strtotime($row['auct_start'])).'</p>
+                                    </div>
+                                  </td>
+                                  <td class="align-middle" >
+                                    <div class="d-flex">
+                                      <p>'.date('Y-m-d', strtotime($row['auct_end'])).'</p>
+                                    </div>
+                                  </td>
+                                  
+                                  <td class="text-nowrap align-middle"  data-search="'.$actv.'">
+                                    
+                                  <div class="switch">
+                                  <input class="switch-input status-btn ser_status" data-selid="'.$row['id'].'"  id="status-'.$row['id'].'"  type="checkbox"  '.$chkd.' >
+                                  <label class="switch-paddle" for="status-'.$row['id'].'">
+                                  <span class="switch-active" aria-hidden="true">Active</span>
+                                  <span class="switch-inactive" aria-hidden="true">Inactive</span>
+                                  </label>
+                                  </div>                    
+                  
+                                  </td>
+                                  <td class="align-middle" >
+                                    <div class="d-flex">
+                                      <p>'.$row['min_bid_price'].'</p>
+                                    </div>
+                                  </td>
+                                  <td class="align-middle" >
+                                    <div class="d-flex">
+                                      <p>'.$row['shipping_cost_id'].'</p>
+                                    </div>
+                                  </td>
+                                  <td class="align-middle" >
+                                    <div class="d-flex">
+                                      <p>'.count($row['bids']).'</p>
+                                    </div>
+                                  </td>
+                                  <td class="align-middle" >
+                                    <div class="d-flex">
+                                      <p>'.$row['bid_allocated_to_user'].'</p>
+                                    </div>
+                                  </td>
+                                  
+
+                                  <td class="align-middle">
+                                    <div class="btn-group align-top">
+                                      
+                                      <a href="'.url('/auctions/log/').'/'.$row['id'].'"   class="mr-2 btn btn-info btn-sm editmodule"><i class="fe fe-edit mr-1"></i> View</a>
+                                      
+                                    </div>
+                                  </td>
+                                  <td class="align-middle">
+                                    <div class="btn-group align-top">
+                                      
+                                      <a href="'. url('/auctions/edit/') .'/'.$row['id'].'"   class="mr-2 btn btn-info btn-sm editmodule"><i class="fe fe-edit mr-1"></i> Edit</a>
+                                      <button  class="btn btn-secondary btn-sm deletemodule" onclick="deletecpn('.$row['id'].');" type="button"><i class="fe fe-trash-2  mr-1"></i>Delete</button>
+                                    </div>
+                                  </td> 
+                                </tr>';
+
+                               }
+                          }else {
+
+                           
+                             $acn_html .='<tr>
+                                  <td class="align-middle select-checkbox" id="moduleid" data-value="'.$row['id'].'">
+                                    <label class="custom-control custom-checkbox">
+
+                                    </label>
+                                  </td>
+                                  <td class="align-middle" >
+                                    <div class="d-flex">
+                                    <p>'.$row['auction_code'].'</p>
+                                  </div>
+                                  </td>
+
+                                  <td class="align-middle" >
+                                      
+                                      <div class="d-flex">';
+
+                                      if($row['product_img']) {
+                                  $acn_html .='<span class="avatar brround avatar-md d-block" style="background-image: url('.$prod_img.')"></span>';
+                                      }else {
+                                  $acn_html .='<span class="avatar brround avatar-md d-block" ></span>';
+                                      }
+                                  
+                              
+                                     $acn_html .=' <div class="ml-3 mt-1">
+                                        <h6 class="mb-0 font-weight-bold">'.$row['product_name'].'</h6>
+                                      </div>
+                                    </div>
+                                  
+                                  </td>
+                                  <td class="align-middle" >
+                                    <div class="d-flex">
+                                     <p>'.$this->wordlimit($row['auct_desc'], 0, 20).'</p>
+                                  </div>
+                                  </td>
+                                  <td class="align-middle" >
+                                    <div class="d-flex">
+                                      <p>'.date('Y-m-d', strtotime($row['auct_start'])).'</p>
+                                    </div>
+                                  </td>
+                                  <td class="align-middle" >
+                                    <div class="d-flex">
+                                      <p>'.date('Y-m-d', strtotime($row['auct_end'])).'</p>
+                                    </div>
+                                  </td>
+                                  
+                                  <td class="text-nowrap align-middle"  data-search="'.$actv.'">
+                                    
+                                  <div class="switch">
+                                  <input class="switch-input status-btn ser_status" data-selid="'.$row['id'].'"  id="status-'.$row['id'].'"  type="checkbox"  '.$chkd.' >
+                                  <label class="switch-paddle" for="status-'.$row['id'].'">
+                                  <span class="switch-active" aria-hidden="true">Active</span>
+                                  <span class="switch-inactive" aria-hidden="true">Inactive</span>
+                                  </label>
+                                  </div>                    
+                  
+                                  </td>
+                                  <td class="align-middle" >
+                                    <div class="d-flex">
+                                      <p>'.$row['min_bid_price'].'</p>
+                                    </div>
+                                  </td>
+                                  <td class="align-middle" >
+                                    <div class="d-flex">
+                                      <p>'.$row['shipping_cost_id'].'</p>
+                                    </div>
+                                  </td>
+                                  <td class="align-middle" >
+                                    <div class="d-flex">
+                                      <p>'.count($row['bids']).'</p>
+                                    </div>
+                                  </td>
+                                  <td class="align-middle" >
+                                    <div class="d-flex">
+                                      <p>'.$row['bid_allocated_to_user'].'</p>
+                                    </div>
+                                  </td>
+                                  
+
+                                  <td class="align-middle">
+                                    <div class="btn-group align-top">
+                                      
+                                      <a href="'.url('/auctions/log/').'/'.$row['id'].'"   class="mr-2 btn btn-info btn-sm editmodule"><i class="fe fe-edit mr-1"></i> View</a>
+                                      
+                                    </div>
+                                  </td>
+                                  <td class="align-middle">
+                                    <div class="btn-group align-top">
+                                      
+                                      <a href="'. url('/auctions/edit/') .'/'.$row['id'].'"   class="mr-2 btn btn-info btn-sm editmodule"><i class="fe fe-edit mr-1"></i> Edit</a>
+                                      <button  class="btn btn-secondary btn-sm deletemodule" onclick="deletecpn('.$row['id'].');" type="button"><i class="fe fe-trash-2  mr-1"></i>Delete</button>
+                                    </div>
+                                  </td> 
+                                </tr>';
+                          }
+
+                            
+                             }
+                           }else {
+                            $acn_html = "0";
+                           }
+
+
+        return $acn_html;
+        
+        }
+    
+
+   
+}

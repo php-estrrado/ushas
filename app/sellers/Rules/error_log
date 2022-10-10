@@ -1,0 +1,1 @@
+[15-May-2019 18:21:11 UTC] PHP Fatal error:  Interface 'Illuminate\Contracts\Validation\Rule' not found in /home/bizzsalon/public_html/app/Rules/Active.php on line 7

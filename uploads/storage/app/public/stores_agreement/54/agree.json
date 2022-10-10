@@ -1,0 +1,1300 @@
+{
+	"info": {
+		"_postman_id": "df86a2b1-3ccb-4b4d-9743-50323496c5de",
+		"name": "SellerApp-API-LIVE",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "My Products",
+			"item": [
+				{
+					"name": "My products list",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "access_token",
+									"value": "YUJAS0H7RVCN",
+									"type": "text"
+								}
+							]
+						},
+						"url": "https://kt.estrradoweb.com/sellers/api/seller/my-products-list"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Product",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "access_token",
+									"value": "QVG6XHED1TC5",
+									"type": "text"
+								},
+								{
+									"key": "product_id",
+									"value": "36",
+									"type": "text"
+								}
+							]
+						},
+						"url": "https://kt.estrradoweb.com/sellers/api/seller/my-products-delete"
+					},
+					"response": []
+				},
+				{
+					"name": "Active/Inactive",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "access_token",
+									"value": "JMC16WG3IB2E",
+									"type": "text"
+								},
+								{
+									"key": "product_id",
+									"value": "21",
+									"type": "text"
+								},
+								{
+									"key": "is_active",
+									"value": "0",
+									"type": "text"
+								}
+							]
+						},
+						"url": "https://kt.estrradoweb.com/sellers/api/seller/my-products/active"
+					},
+					"response": []
+				},
+				{
+					"name": "ADD Special offer",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "access_token",
+									"value": "7F4GDM3ECL06",
+									"type": "text"
+								},
+								{
+									"key": "product_id",
+									"value": "20",
+									"type": "text"
+								},
+								{
+									"key": "discount_value",
+									"value": "10",
+									"type": "text"
+								},
+								{
+									"key": "discount_type",
+									"value": "percentage",
+									"description": "percentage|amount",
+									"type": "text"
+								},
+								{
+									"key": "qty_limit",
+									"value": "2",
+									"type": "text"
+								},
+								{
+									"key": "valid_from",
+									"value": "2021-11-01",
+									"type": "text"
+								},
+								{
+									"key": "valid_to",
+									"value": "2021-11-05",
+									"type": "text"
+								},
+								{
+									"key": "active",
+									"value": "0",
+									"description": "0 or 1",
+									"type": "text"
+								}
+							]
+						},
+						"url": "https://kt.estrradoweb.com/sellers/api/seller/my-products/add-offer"
+					},
+					"response": []
+				},
+				{
+					"name": "Fetch Special offer",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "access_token",
+									"value": "7F4GDM3ECL06",
+									"type": "text"
+								},
+								{
+									"key": "product_id",
+									"value": "20",
+									"type": "text"
+								}
+							]
+						},
+						"url": "https://kt.estrradoweb.com/sellers/api/seller/my-products/fetch-offer"
+					},
+					"response": []
+				},
+				{
+					"name": "Add my products",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"lang_id\":1,\r\n    \"access_token\":\"YUJAS0H7RVCN\",\r\n    \"category_id\":4,\r\n    \"subcategory_id\":22,\r\n     \"brand_id\":\"\",\r\n     \"tax_id\":5,\r\n     \"tag_id\":\"\",\r\n     \"name\":\"Simple product check\",\r\n     \"sku\":\"PRODFCH\",\r\n     \"is_active\":1,\r\n     \"short_desc\":\"fhgchfghgfhgfhgfhgfh\",\r\n     \"long_desc\":\"fdgfdgfdg\",\r\n     \"content\":\"\",\r\n     \"specification\":\"78787687\",\r\n     \"is_featured\":1,\r\n      \"is_deal\":1,\r\n     \"out_of_stock_sell\":1,\r\n     \"related_prd_id\":\"\",\r\n     \"profit_sharing\":1,\r\n     \"commission_type\":\"%\",\r\n     \"product_type\":1,\r\n     \"simple_prd_price\":100,\r\n     \"simple_sale_price\":\"\",\r\n     \"simple_sale_from\":\"\",\r\n    \"simple_sale_to\":\"\",\r\n    \"simple_prd_tax\":5,\r\n    \"simple_ship_weight\":23,\r\n    \"simple_ship_length\":34,\r\n    \"simple_ship_width\":56,\r\n    \"simple_ship_height\":23,\r\n    \"image\":\"\",\r\n    \"video\":\"\",\r\n   \"AttributeNM1\": \"Colorrs\",\r\n    \"Options1\": \"Black\",\r\n    \"Option1_img\":\"\",\r\n    \"Options2\": \"\",\r\n    \"Option2_img\":\"\",\r\n    \"Options3\": \"\",\r\n    \"Option3_img\":\"\",\r\n    \"Options4\": \"\",\r\n    \"Option4_img\":\"\",\r\n    \"Options5\": \"\",\r\n    \"Option5_img\":\"\",\r\n    \"AttributeNM2\": \"Sizess\",\r\n    \"Options21\": \"L\",\r\n    \"Options22\": \"\",\r\n    \"Options23\": \"\",\r\n    \"Options24\": \"\",\r\n    \"Options25\": \"\",\r\n    \"Options21_img\": \"\",\r\n    \"Options22_img\": \"\",\r\n    \"Options23_img\": \"\",\r\n    \"Options24_img\": \"\",\r\n    \"Options25_img\": \"\",\r\n    \"variation\": {\r\n        \"0\": {\r\n            \"Attr1\":\"Black\",\r\n            \"Attr2\": \"L\",\r\n            \"price\": 11235,\r\n            \"stock\": 6,\r\n            \"sku\":\"dfgdfg\",\r\n            \"ship\": {\"0\":{\"height\":20,\"weight\":23,\"length\":56,\"width\":90}}\r\n        }\r\n    }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "https://kt.estrradoweb.com/sellers/api/seller/my-products/add"
+					},
+					"response": []
+				},
+				{
+					"name": "Edit my products",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"lang_id\":1,\r\n    \"access_token\":\"YUJAS0H7RVCN\",\r\n    \"product_id\":288,\r\n    \"category_id\":4,\r\n    \"subcategory_id\":22,\r\n     \"brand_id\":\"\",\r\n     \"tax_id\":5,\r\n     \"tag_id\":\"\",\r\n     \"name\":\"Simpleproduct to check\",\r\n     \"sku\":\"SIMPLEPRO\",\r\n     \"is_active\":1,\r\n     \"short_desc\":\"CHECKED\",\r\n     \"long_desc\":\"CHECKED\",\r\n     \"content\":\"CHECKED\",\r\n     \"specification\":\"CHECKED\",\r\n     \"is_featured\":0,\r\n      \"is_deal\":0,\r\n     \"out_of_stock_sell\":0,\r\n     \"related_prd_id\":221,\r\n     \"profit_sharing\":1,\r\n     \"commission_type\":\"%\",\r\n     \"product_type\":1,\r\n     \"simple_prd_price\":2000,\r\n     \"simple_sale_price\":\"\",\r\n     \"simple_sale_from\":\"\",\r\n    \"simple_sale_to\":\"\",\r\n    \"simple_prd_tax\":5,\r\n    \"simple_ship_weight\":50,\r\n    \"simple_ship_length\":50,\r\n    \"simple_ship_width\":50,\r\n    \"simple_ship_height\":50,\r\n    \"image\":\"\",\r\n    \"video\":\"\",\r\n   \"AttributeNM1\": \"Colorrs\",\r\n    \"Options1\": \"Black\",\r\n    \"Option1_img\":\"\",\r\n    \"Options2\": \"\",\r\n    \"Option2_img\":\"\",\r\n    \"Options3\": \"\",\r\n    \"Option3_img\":\"\",\r\n    \"Options4\": \"\",\r\n    \"Option4_img\":\"\",\r\n    \"Options5\": \"\",\r\n    \"Option5_img\":\"\",\r\n    \"AttributeNM2\": \"Sizess\",\r\n    \"Options21\": \"L\",\r\n    \"Options22\": \"\",\r\n    \"Options23\": \"\",\r\n    \"Options24\": \"\",\r\n    \"Options25\": \"\",\r\n    \"Options21_img\": \"\",\r\n    \"Options22_img\": \"\",\r\n    \"Options23_img\": \"\",\r\n    \"Options24_img\": \"\",\r\n    \"Options25_img\": \"\",\r\n    \"variation\": {\r\n        \"0\": {\r\n            \"Attr1\":\"Black\",\r\n            \"Attr2\": \"L\",\r\n            \"price\": 11235,\r\n            \"stock\": 6,\r\n            \"sku\":\"dfgdfg\",\r\n            \"ship\": {\"0\":{\"height\":20,\"weight\":23,\"length\":56,\"width\":90}}\r\n        }\r\n    }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "https://kt.estrradoweb.com/sellers/api/seller/my-products/edit"
+					},
+					"response": []
+				},
+				{
+					"name": "My product Detail",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "access_token",
+									"value": "YUJAS0H7RVCN",
+									"type": "text"
+								},
+								{
+									"key": "product_id",
+									"value": "287",
+									"type": "text"
+								}
+							]
+						},
+						"url": "https://kt.estrradoweb.com/sellers/api/seller/my-products/detail"
+					},
+					"response": []
+				},
+				{
+					"name": "Brand",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": []
+						},
+						"url": "https://kt.estrradoweb.com/sellers/api/seller/brand"
+					},
+					"response": []
+				},
+				{
+					"name": "Tax",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": []
+						},
+						"url": "https://kt.estrradoweb.com/sellers/api/seller/tax"
+					},
+					"response": []
+				},
+				{
+					"name": "Category",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": []
+						},
+						"url": "https://kt.estrradoweb.com/sellers/api/seller/category"
+					},
+					"response": []
+				},
+				{
+					"name": "SubCategory",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "category_id",
+									"value": "4",
+									"type": "text"
+								}
+							]
+						},
+						"url": "https://kt.estrradoweb.com/sellers/api/seller/sub-category"
+					},
+					"response": []
+				},
+				{
+					"name": "Tags",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "category_id",
+									"value": "",
+									"type": "text"
+								},
+								{
+									"key": "subcategory_id",
+									"value": "",
+									"type": "text"
+								}
+							]
+						},
+						"url": "https://kt.estrradoweb.com/sellers/api/seller/tags"
+					},
+					"response": []
+				},
+				{
+					"name": "Relative Products",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "access_token",
+									"value": "H9PNMOEW2S3K",
+									"type": "text"
+								}
+							]
+						},
+						"url": "https://kt.estrradoweb.com/sellers/api/seller/relative"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Admin Products",
+			"item": [
+				{
+					"name": "Admin products list",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "access_token",
+									"value": "H9PNMOEW2S3K",
+									"type": "text"
+								}
+							]
+						},
+						"url": "https://kt.estrradoweb.com/sellers/api/seller/admin-products/list"
+					},
+					"response": []
+				},
+				{
+					"name": "Admin product Detail",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "access_token",
+									"value": "H9PNMOEW2S3K",
+									"type": "text"
+								},
+								{
+									"key": "adm_product_id",
+									"value": "1",
+									"type": "text"
+								}
+							]
+						},
+						"url": "https://kt.estrradoweb.com/sellers/api/seller/admin-products/detail"
+					},
+					"response": []
+				},
+				{
+					"name": "Add from Admin Prds",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"lang_id\":1,\r\n    \"access_token\":\"4UEJD2S5CFT8\",\r\n    \"admin_prd_id\":29,\r\n    \"name\":\"Merlin's Product\",\r\n     \"tax_id\":1,\r\n     \"sku\":\"SIMPLEPRO\",\r\n     \"is_active\":1,\r\n     \"short_desc\":\"fhgchfghgfhgfhgfhgfh\",\r\n     \"long_desc\":\"fdgfdgfdg\",\r\n     \"content\":\"\",\r\n     \"specification\":\"78787687\",\r\n     \"is_featured\":1,\r\n      \"is_deal\":1,\r\n     \"out_of_stock_sell\":1,\r\n     \"related_prd_id\":\"\",\r\n     \"profit_sharing\":1,\r\n     \"commission_type\":\"%\",\r\n     \"product_type\":1,\r\n     \"simple_prd_price\":100,\r\n     \"simple_sale_price\":\"\",\r\n     \"simple_sale_from\":\"\",\r\n    \"simple_sale_to\":\"\",\r\n    \"simple_prd_tax\":2,\r\n    \"simple_ship_weight\":23,\r\n    \"simple_ship_length\":34,\r\n    \"simple_ship_width\":56,\r\n    \"simple_ship_height\":23,\r\n    \"image\":\"\",\r\n    \"video\":\"\",\r\n   \"AttributeNM1\": \"Colorrs\",\r\n    \"Options1\": \"Black\",\r\n    \"Option1_img\":\"\",\r\n    \"Options2\": \"\",\r\n    \"Option2_img\":\"\",\r\n    \"Options3\": \"\",\r\n    \"Option3_img\":\"\",\r\n    \"Options4\": \"\",\r\n    \"Option4_img\":\"\",\r\n    \"Options5\": \"\",\r\n    \"Option5_img\":\"\",\r\n    \"AttributeNM2\": \"Sizess\",\r\n    \"Options21\": \"L\",\r\n    \"Options22\": \"\",\r\n    \"Options23\": \"\",\r\n    \"Options24\": \"\",\r\n    \"Options25\": \"\",\r\n    \"Options21_img\": \"\",\r\n    \"Options22_img\": \"\",\r\n    \"Options23_img\": \"\",\r\n    \"Options24_img\": \"\",\r\n    \"Options25_img\": \"\",\r\n    \"variation\": {\r\n        \"0\": {\r\n            \"Attr1\":\"Black\",\r\n            \"Attr2\": \"L\",\r\n            \"price\": 11235,\r\n            \"stock\": 6,\r\n            \"sku\":\"dfgdfg\",\r\n            \"ship\": {\"0\":{\"height\":20,\"weight\":23,\"length\":56,\"width\":90}}\r\n        }\r\n    }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "https://kt.estrradoweb.com/sellers/api/seller/admin-products/add"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Sale Order",
+			"item": [
+				{
+					"name": "Order List",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "access_token",
+									"value": "7M8146RVLHZQ",
+									"type": "text"
+								}
+							]
+						},
+						"url": "https://kt.estrradoweb.com/sellers/api/seller/order/list"
+					},
+					"response": []
+				},
+				{
+					"name": "Order Request List",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "access_token",
+									"value": "7M8146RVLHZQ",
+									"type": "text"
+								}
+							]
+						},
+						"url": "https://kt.estrradoweb.com/sellers/api/seller/order/requests"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Stock-Price",
+			"item": [
+				{
+					"name": "Stock & Price List",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "access_token",
+									"value": "HLOP70YE3UIT",
+									"type": "text"
+								}
+							]
+						},
+						"url": "https://kt.estrradoweb.com/sellers/api/seller/stock-price/list"
+					},
+					"response": []
+				},
+				{
+					"name": "Stock Log",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "access_token",
+									"value": "HLOP70YE3UIT",
+									"type": "text"
+								},
+								{
+									"key": "product_id",
+									"value": "21",
+									"type": "text"
+								}
+							]
+						},
+						"url": "https://kt.estrradoweb.com/sellers/api/seller/stock/log"
+					},
+					"response": []
+				},
+				{
+					"name": "Stock ADD",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "access_token",
+									"value": "WDEM3R6NKOPV",
+									"type": "text"
+								},
+								{
+									"key": "product_id",
+									"value": "505",
+									"type": "text"
+								},
+								{
+									"key": "qty",
+									"value": "10",
+									"type": "text"
+								}
+							]
+						},
+						"url": "https://kt.estrradoweb.com/sellers/api/seller/stock/add"
+					},
+					"response": []
+				},
+				{
+					"name": "Price Log",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "access_token",
+									"value": "WDEM3R6NKOPV",
+									"type": "text"
+								},
+								{
+									"key": "product_id",
+									"value": "21",
+									"type": "text"
+								}
+							]
+						},
+						"url": "https://kt.estrradoweb.com/sellers/api/seller/price/log"
+					},
+					"response": []
+				},
+				{
+					"name": "Price ADD",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "access_token",
+									"value": "WDEM3R6NKOPV",
+									"type": "text"
+								},
+								{
+									"key": "product_id",
+									"value": "21\n",
+									"type": "text"
+								},
+								{
+									"key": "price",
+									"value": "5000",
+									"type": "text"
+								},
+								{
+									"key": "sale_price",
+									"value": "4999",
+									"description": "null or sale_price",
+									"type": "text"
+								},
+								{
+									"key": "sale_start_date",
+									"value": "",
+									"description": "Format : Y-m-d(2021-11-15)",
+									"type": "text"
+								},
+								{
+									"key": "sale_end_date",
+									"value": "",
+									"description": "Format : Y-m-d(2021-11-15)",
+									"type": "text"
+								}
+							]
+						},
+						"url": "https://kt.estrradoweb.com/sellers/api/seller/price/add"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Reviews-Product",
+			"item": [
+				{
+					"name": "Product Review list",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "access_token",
+									"value": "L6FED9BR7M4H",
+									"type": "text"
+								}
+							]
+						},
+						"url": "https://kt.estrradoweb.com/sellers/api/seller/review/list"
+					},
+					"response": []
+				},
+				{
+					"name": "Product Review",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "access_token",
+									"value": "EX0MQIG5ORDY",
+									"type": "text"
+								},
+								{
+									"key": "product_id",
+									"value": "505",
+									"type": "text"
+								}
+							]
+						},
+						"url": "https://kt.estrradoweb.com/sellers/api/seller/review/product"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Login",
+			"item": [
+				{
+					"name": "Login",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "email",
+									"value": "seller@estrrado.com",
+									"type": "text"
+								},
+								{
+									"key": "password",
+									"value": "123456",
+									"type": "text"
+								},
+								{
+									"key": "deviceToken",
+									"value": "12345",
+									"type": "text"
+								},
+								{
+									"key": "deviceId",
+									"value": "123458800",
+									"type": "text"
+								},
+								{
+									"key": "deviceName",
+									"value": "OPPOAS",
+									"type": "text"
+								}
+							]
+						},
+						"url": "https://kt.estrradoweb.com/sellers/api/seller/login"
+					},
+					"response": []
+				},
+				{
+					"name": "Login-Username",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "email",
+									"value": "aleena@estrrado.com",
+									"description": "Try these usernames: shop@gmail.com,merlin@estrrado.com,aleena@estrrado.com",
+									"type": "text"
+								}
+							]
+						},
+						"url": "https://kt.estrradoweb.com/sellers/api/seller/login-username"
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "seller_id",
+									"value": "9",
+									"type": "text"
+								}
+							]
+						},
+						"url": "https://kt.estrradoweb.com/sellers/api/seller/logout"
+					},
+					"response": []
+				},
+				{
+					"name": "Check Username",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "email",
+									"value": "merlin@estrrado.com",
+									"type": "text"
+								}
+							]
+						},
+						"url": "https://kt.estrradoweb.com/sellers/api/seller/check-email"
+					},
+					"response": []
+				},
+				{
+					"name": "Forgot Password",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "password",
+									"value": "123456",
+									"type": "text"
+								},
+								{
+									"key": "seller_id",
+									"value": "9",
+									"type": "text"
+								},
+								{
+									"key": "deviceToken",
+									"value": "545FGHFG",
+									"type": "text"
+								},
+								{
+									"key": "deviceId",
+									"value": "gghg445",
+									"type": "text"
+								},
+								{
+									"key": "deviceName",
+									"value": "Oppo",
+									"type": "text"
+								}
+							]
+						},
+						"url": "https://kt.estrradoweb.com/sellers/api/seller/forgot-password"
+					},
+					"response": []
+				},
+				{
+					"name": "Generate OTP (Password)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "email",
+									"value": "merlin@estrrado.com",
+									"type": "text"
+								}
+							]
+						},
+						"url": "https://kt.estrradoweb.com/sellers/api/seller/generate-otp"
+					},
+					"response": []
+				},
+				{
+					"name": "Confirm OTP(Password)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "otp",
+									"value": "2410",
+									"type": "text"
+								},
+								{
+									"key": "seller_id",
+									"value": "1",
+									"type": "text"
+								}
+							]
+						},
+						"url": "https://kt.estrradoweb.com/sellers/api/seller/confirm-otp"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Registration",
+			"item": [
+				{
+					"name": "Registration",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "business_name",
+									"value": "Jewel seller",
+									"type": "text"
+								},
+								{
+									"key": "store_name",
+									"value": "Jewel  Shop",
+									"type": "text"
+								},
+								{
+									"key": "email",
+									"value": "jewel@gmail.com",
+									"type": "text"
+								},
+								{
+									"key": "phone_number",
+									"value": "8956231245",
+									"type": "text"
+								},
+								{
+									"key": "director_name",
+									"value": "Jan",
+									"type": "text"
+								},
+								{
+									"key": "country",
+									"value": "101",
+									"type": "text"
+								},
+								{
+									"key": "state",
+									"value": "255",
+									"type": "text"
+								},
+								{
+									"key": "city",
+									"value": "200",
+									"type": "text"
+								},
+								{
+									"key": "zip_code",
+									"value": "678908",
+									"type": "text"
+								},
+								{
+									"key": "store_categories",
+									"value": "4",
+									"type": "text"
+								},
+								{
+									"key": "director_ic_number",
+									"value": "12345",
+									"type": "text"
+								},
+								{
+									"key": "store_licence",
+									"value": "12345",
+									"type": "text"
+								},
+								{
+									"key": "address",
+									"value": "Tech",
+									"type": "text"
+								},
+								{
+									"key": "address2",
+									"value": "Technical side",
+									"type": "text"
+								},
+								{
+									"key": "latitude",
+									"value": "1.45",
+									"type": "text"
+								},
+								{
+									"key": "state",
+									"value": "1234",
+									"type": "text"
+								},
+								{
+									"key": "longitude",
+									"value": "2.82",
+									"type": "text"
+								},
+								{
+									"key": "store_desc",
+									"value": "Shop your needs from nearest shop",
+									"type": "text"
+								},
+								{
+									"key": "commission",
+									"value": "1",
+									"type": "text"
+								},
+								{
+									"key": "apply_tax",
+									"value": "2",
+									"type": "text"
+								},
+								{
+									"key": "incharge_name",
+									"value": "Jan",
+									"type": "text"
+								},
+								{
+									"key": "incharge_phone",
+									"value": "1234567",
+									"type": "text"
+								},
+								{
+									"key": "incharge_isd_code",
+									"value": "91",
+									"type": "text"
+								},
+								{
+									"key": "logo",
+									"type": "file",
+									"src": "/C:/Users/User/Downloads/jewellogo.jpg"
+								},
+								{
+									"key": "certificate",
+									"type": "file",
+									"src": "/C:/Users/User/Downloads/Resume.pdf"
+								}
+							]
+						},
+						"url": "https://kt.estrradoweb.com/sellers/api/seller/register"
+					},
+					"response": []
+				},
+				{
+					"name": "Registration MJS",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "business_name",
+									"value": "Jewel seller",
+									"type": "text"
+								},
+								{
+									"key": "store_name",
+									"value": "Jewel  Shop",
+									"type": "text"
+								},
+								{
+									"key": "email",
+									"value": "jewel@gmail.com",
+									"type": "text"
+								},
+								{
+									"key": "phone_number",
+									"value": "8956231245",
+									"type": "text"
+								},
+								{
+									"key": "director_name",
+									"value": "Jan",
+									"type": "text"
+								},
+								{
+									"key": "country",
+									"value": "101",
+									"type": "text"
+								},
+								{
+									"key": "state",
+									"value": "255",
+									"type": "text"
+								},
+								{
+									"key": "city",
+									"value": "200",
+									"type": "text"
+								},
+								{
+									"key": "zip_code",
+									"value": "678908",
+									"type": "text"
+								},
+								{
+									"key": "store_categories",
+									"value": "4",
+									"type": "text"
+								},
+								{
+									"key": "director_ic_number",
+									"value": "12345",
+									"type": "text"
+								},
+								{
+									"key": "store_licence",
+									"value": "12345",
+									"type": "text"
+								},
+								{
+									"key": "address",
+									"value": "Tech",
+									"type": "text"
+								},
+								{
+									"key": "address2",
+									"value": "Technical side",
+									"type": "text"
+								},
+								{
+									"key": "latitude",
+									"value": "1.45",
+									"type": "text"
+								},
+								{
+									"key": "state",
+									"value": "1234",
+									"type": "text"
+								},
+								{
+									"key": "longitude",
+									"value": "2.82",
+									"type": "text"
+								},
+								{
+									"key": "store_desc",
+									"value": "Shop your needs from nearest shop",
+									"type": "text"
+								},
+								{
+									"key": "commission",
+									"value": "1",
+									"type": "text"
+								},
+								{
+									"key": "apply_tax",
+									"value": "2",
+									"type": "text"
+								},
+								{
+									"key": "incharge_name",
+									"value": "Jan",
+									"type": "text"
+								},
+								{
+									"key": "incharge_phone",
+									"value": "1234567",
+									"type": "text"
+								},
+								{
+									"key": "incharge_isd_code",
+									"value": "91",
+									"type": "text"
+								},
+								{
+									"key": "logo",
+									"type": "file",
+									"src": "/C:/Users/User/Downloads/jewellogo.jpg"
+								},
+								{
+									"key": "certificate",
+									"type": "file",
+									"src": "/C:/Users/User/Downloads/Resume.pdf"
+								},
+								{
+									"key": "agreement",
+									"description": "Not epmpty for MJS",
+									"type": "file",
+									"src": "/C:/Users/User/Downloads/agreement.docx"
+								},
+								{
+									"key": "certificate_end_date",
+									"value": "2022-12-11",
+									"type": "text"
+								}
+							]
+						},
+						"url": "https://uat-mjs.estrradoweb.com/sellers/api/seller/register"
+					},
+					"response": []
+				},
+				{
+					"name": "Agreement Download MJS",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "file",
+							"file": {}
+						},
+						"url": "https://uat-mjs.estrradoweb.com/sellers/api/agreement"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "General",
+			"item": [
+				{
+					"name": "Country",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "file",
+							"file": {}
+						},
+						"url": "https://kt.estrradoweb.com/sellers/api/country"
+					},
+					"response": []
+				},
+				{
+					"name": "City",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "state_id",
+									"value": "2307",
+									"type": "text"
+								}
+							]
+						},
+						"url": "https://kt.estrradoweb.com/sellers/api/city"
+					},
+					"response": []
+				},
+				{
+					"name": "State",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "country_id",
+									"value": "132",
+									"type": "text"
+								}
+							]
+						},
+						"url": "https://kt.estrradoweb.com/sellers/api/state"
+					},
+					"response": []
+				},
+				{
+					"name": "Categories",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "country_id",
+									"value": "132",
+									"type": "text"
+								}
+							]
+						},
+						"url": "https://kt.estrradoweb.com/sellers/api/category"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Dashboard",
+			"item": [
+				{
+					"name": "Dashboard",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "access_token",
+									"value": "MVS4NZYLU781",
+									"type": "text"
+								}
+							]
+						},
+						"url": "https://kt.estrradoweb.com/sellers/api/seller/dashboard"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Version",
+			"item": [
+				{
+					"name": "Version",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "app_name",
+									"value": "KT-seller App",
+									"type": "text"
+								}
+							]
+						},
+						"url": "https://kt.estrradoweb.com/sellers/api/seller/version"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Customer",
+			"item": [
+				{
+					"name": "Customer List",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "access_token",
+									"value": "LNGF6EPDZ3JQ",
+									"type": "text"
+								}
+							]
+						},
+						"url": "https://kt.estrradoweb.com/sellers/api/seller/customer/list"
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

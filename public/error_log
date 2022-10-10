@@ -1,0 +1,2 @@
+[26-Jun-2021 09:48:51 UTC] PHP Warning:  require(/home/estrradoweb/public_html/kangtao/public/../vendor/autoload.php): failed to open stream: No such file or directory in /home/estrradoweb/public_html/kangtao/public/index.php on line 34
+[26-Jun-2021 09:48:51 UTC] PHP Fatal error:  require(): Failed opening required '/home/estrradoweb/public_html/kangtao/public/../vendor/autoload.php' (include_path='.:/opt/cpanel/ea-php73/root/usr/share/pear') in /home/estrradoweb/public_html/kangtao/public/index.php on line 34
