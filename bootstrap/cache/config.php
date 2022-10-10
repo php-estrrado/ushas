@@ -4,15 +4,15 @@
     'name' => 'Big Basket',
     'env' => 'local',
     'debug' => true,
-    'url' => 'http://localhost/ushas',
-    'asset_url' => 'http://localhost/ushaspublic',
-    'upload_url' => 'http://localhost/ushasuploads/api',
-    'storage_url' => 'http://localhost/ushasuploads/storage',
+    'url' => 'http://localhost/ushas-dev',
+    'asset_url' => 'http://localhost/ushas-dev/public',
+    'upload_url' => 'http://localhost/ushas-dev/uploads/api',
+    'storage_url' => 'http://localhost/ushas-dev/uploads/storage',
     'timezone' => 'Asia/Kolkata',
     'locale' => 'en',
     'fallback_locale' => 'en',
     'faker_locale' => 'en_US',
-    'key' => 'base64:pg1f0izQn9lhU3Hejz7QuqmPElklH8RWaNXenjWQoDQ=',
+    'key' => 'base64:/7f3eXwBTWt//TTwYSEJrqYI8Q+sdXZ5dbrrGglzW5k=',
     'cipher' => 'AES-256-CBC',
     'providers' => 
     array (
@@ -212,7 +212,7 @@
       'file' => 
       array (
         'driver' => 'file',
-        'path' => 'C:\\wamp64\\www\\ushas\\storage\\framework/cache/data',
+        'path' => 'C:\\wamp64\\www\\ushas-dev\\storage\\framework/cache/data',
       ),
       'memcached' => 
       array (
@@ -387,13 +387,13 @@
       'local' => 
       array (
         'driver' => 'local',
-        'root' => 'C:\\wamp64\\www\\ushas\\storage\\app',
+        'root' => 'C:\\wamp64\\www\\ushas-dev\\storage\\app',
       ),
       'public' => 
       array (
         'driver' => 'local',
-        'root' => 'C:\\wamp64\\www\\ushas\\storage\\app/public',
-        'url' => 'http://localhost/ushas/storage',
+        'root' => 'C:\\wamp64\\www\\ushas-dev\\storage\\app/public',
+        'url' => 'http://localhost/ushas-dev/storage',
         'visibility' => 'public',
       ),
       's3' => 
@@ -410,7 +410,7 @@
     ),
     'links' => 
     array (
-      'C:\\wamp64\\www\\ushas\\public\\storage' => 'C:\\wamp64\\www\\ushas\\storage\\app/public',
+      'C:\\wamp64\\www\\ushas-dev\\public\\storage' => 'C:\\wamp64\\www\\ushas-dev\\storage\\app/public',
     ),
   ),
   'hashing' => 
@@ -444,13 +444,13 @@
       'single' => 
       array (
         'driver' => 'single',
-        'path' => 'C:\\wamp64\\www\\ushas\\storage\\logs/laravel.log',
+        'path' => 'C:\\wamp64\\www\\ushas-dev\\storage\\logs/laravel.log',
         'level' => 'debug',
       ),
       'daily' => 
       array (
         'driver' => 'daily',
-        'path' => 'C:\\wamp64\\www\\ushas\\storage\\logs/laravel.log',
+        'path' => 'C:\\wamp64\\www\\ushas-dev\\storage\\logs/laravel.log',
         'level' => 'debug',
         'days' => 14,
       ),
@@ -501,7 +501,7 @@
       ),
       'emergency' => 
       array (
-        'path' => 'C:\\wamp64\\www\\ushas\\storage\\logs/laravel.log',
+        'path' => 'C:\\wamp64\\www\\ushas-dev\\storage\\logs/laravel.log',
       ),
     ),
   ),
@@ -563,7 +563,7 @@
       'theme' => 'default',
       'paths' => 
       array (
-        0 => 'C:\\wamp64\\www\\ushas\\resources\\views/vendor/mail',
+        0 => 'C:\\wamp64\\www\\ushas-dev\\resources\\views/vendor/mail',
       ),
     ),
     'stream' => 
@@ -691,7 +691,7 @@
     'lifetime' => '30',
     'expire_on_close' => false,
     'encrypt' => false,
-    'files' => 'C:\\wamp64\\www\\ushas\\storage\\framework/sessions',
+    'files' => 'C:\\wamp64\\www\\ushas-dev\\storage\\framework/sessions',
     'connection' => NULL,
     'table' => 'sessions',
     'store' => NULL,
@@ -776,9 +776,9 @@
   array (
     'paths' => 
     array (
-      0 => 'C:\\wamp64\\www\\ushas\\resources\\views',
+      0 => 'C:\\wamp64\\www\\ushas-dev\\resources\\views',
     ),
-    'compiled' => 'C:\\wamp64\\www\\ushas\\storage\\framework\\views',
+    'compiled' => 'C:\\wamp64\\www\\ushas-dev\\storage\\framework\\views',
   ),
   'dompdf' => 
   array (
@@ -786,10 +786,10 @@
     'orientation' => 'portrait',
     'defines' => 
     array (
-      'font_dir' => 'C:\\wamp64\\www\\ushas\\storage\\fonts/',
-      'font_cache' => 'C:\\wamp64\\www\\ushas\\storage\\fonts/',
+      'font_dir' => 'C:\\wamp64\\www\\ushas-dev\\storage\\fonts/',
+      'font_cache' => 'C:\\wamp64\\www\\ushas-dev\\storage\\fonts/',
       'temp_dir' => 'C:\\Users\\user\\AppData\\Local\\Temp',
-      'chroot' => 'C:\\wamp64\\www\\ushas',
+      'chroot' => 'C:\\wamp64\\www\\ushas-dev',
       'enable_font_subsetting' => false,
       'pdf_backend' => 'CPDF',
       'default_media_type' => 'screen',
