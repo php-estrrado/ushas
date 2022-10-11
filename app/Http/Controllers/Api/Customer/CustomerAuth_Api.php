@@ -121,6 +121,7 @@ class CustomerAuth_Api extends Controller
                 //         }
                 }
             }
+
           $email = $request->email;
           //return $email;die;
           $random = Str::random(6);
@@ -147,6 +148,31 @@ class CustomerAuth_Api extends Controller
                 $filename='';
             }
 
+            if($request->hasFile('pan_file'))
+            {
+
+            $pan_file=$request->file('pan_file');
+            $extention=$pan_file->getClientOriginalExtension();
+            $pan_filename=time().'.'.$extention;
+            $pan_file->move(('storage/app/public/customer_profile/pan/'),$pan_filename);
+            }
+            else
+            {
+                $pan_filename='';
+            }
+
+            if($request->hasFile('gst_file'))
+            {
+            $gst_file=$request->file('gst_file');
+            $extention=$gst_file->getClientOriginalExtension();
+            $gst_filename=time().'.'.$extention;
+            $gst_file->move(('storage/app/public/customer_profile/gst/'),$gst_filename);
+            }
+            else
+            {
+                $gst_filename='';
+            }
+
            $info = CustomerInfo::create(['org_id' => 1,
            'first_name' => $request->first_name,
            'last_name' =>$request->last_name,
@@ -156,7 +182,12 @@ class CustomerAuth_Api extends Controller
            'is_active'=>1,
            'is_deleted'=>0,
            'created_at'=>date("Y-m-d H:i:s"),
-           'updated_at'=>date("Y-m-d H:i:s")]);
+           'updated_at'=>date("Y-m-d H:i:s")])->id;
+
+           if($pan_filename !="") { CustomerInfo::where('id',$info)->update(['pan_file'=>$pan_filename]); }
+           if($gst_filename !="") { CustomerInfo::where('id',$info)->update(['gst_file'=>$gst_filename]); }
+           if($request->pan_number !="") { CustomerInfo::where('id',$info)->update(['pan_number'=>$request->pan_number]); }
+           if($request->gst_number !="") { CustomerInfo::where('id',$info)->update(['gst_number'=>$request->gst_number]); }
 
           $security = CustomerSecurity::create(['org_id' => 1,
           'password_hash' => Hash::make($request->password),
@@ -206,7 +237,7 @@ class CustomerAuth_Api extends Controller
            $otp=1234;
            $ph_no = '+'.$request->country_code.$request->phone_number;
                 $msg = 'Your code for Registration - OTP: '.$otp.', Do not share this with anyone- '.config('app.name');
-                $sendOTP_Twilio = twilio_send_otp($ph_no,$msg);
+               // $sendOTP_Twilio = twilio_send_otp($ph_no,$msg);
            CustomerRegisterotp::create(['user_id'=>$masterId,'country_code'=>$request->country_code,'phone_number'=>$request->phone_number,'otp'=>$otp,'created_at'=>date('Y-m-d H:i:s')]);
 
         //   $address= CustomerAddress::create(['org_id'=>1,
@@ -247,7 +278,7 @@ class CustomerAuth_Api extends Controller
                 $email = $request->email;
                 $data['data'] = array("content"=>"Test",'user_name'=>$user_name);
                 $var = Mail::send('emails.account_success_msg', $data, function($message) use($data,$email) {
-                $message->from(getadmin_mail(),'BigBasket');    
+                $message->from(getadmin_mail(),'Ushas');    
                 $message->to($email);
                 $message->subject('Registration Success');
                 });
@@ -273,68 +304,7 @@ class CustomerAuth_Api extends Controller
             addNotification($from,$utype,$to,$ntype,$title,$desc,$refId,$reflink,$notify);
         //endnotification
         
-           $headers[] = 'Content-Type: application/json';
-           $datapass = json_encode(array(
-            'unique_id'=>$masterId,
-            'Customer_Id'=>0,
-            'CustomerName' => $request->first_name,
-            'EmailID' => $request->email,
-            'MobileNo'=> $request->phone_number,
-            'CustomerStatus'=>1,
-            'GSTNomber'=>'',
-            'CustomerPOCName'=>$request->first_name,
-            'DivisionId'=>49,
-            'Street'=>'NULL',
-            'City'=>'NULL',
-            'Country'=>'NULL',
-            'State'=>'NULL',
-            'Customer_Type_Id'=>'',
-            'CustomerCode'=>'',
-            'IsNDPApplicable'=>'',
-            'AuthorityApproval'=>'',
-            'ActiveFlag'=>'',
-            'BranchId'=>'',
-            'UserId'=>0,
-            'OrganisationId'=>50,
-            'IndustryID'=>'',
-            'SourceID'=>'',
-            'HowToJoin'=>'',
-            'HowToServeUrself'=>'',
-            'Typology'=>'',
-            'HowIsStoreFront'=>'',
-            'StoreInterior'=>'',
-            'Ambience'=>'',
-            'MainNeeds'=>'',
-            'Competitors'=>'',
-            'BusinessType'=>'',
-            'NoOfSeats'=>'',
-            'TurnOver'=>'',
-            'StoreFile'=>'',
-            'CRFile'=>'',
-            'VATFile'=>'',
-            'MenuFile'=>'',
-            'CRNo'=>'',
-            'VATNo'=>'',
-            'MobileNo1'=>'',
-            'MobileNo2'=>'',
-            'LandLine'=>'',
-            'Need'=>'',
-            'Quantity'=>''
-        ));     
-           $url_cust_reg = config('crm.customer_api');
-           $handle = curl_init($url_cust_reg);
-            curl_setopt($handle, CURLOPT_POST, true);
-            curl_setopt($handle, CURLOPT_POSTFIELDS, $datapass);
-            curl_setopt($handle, CURLOPT_HTTPHEADER, $headers);    
-            curl_setopt($handle, CURLOPT_RETURNTRANSFER, true);
-            $response = curl_exec($handle);
-            curl_close($handle);
-            $return_response = json_decode($response,true);
-            if(isset($return_response) && isset($return_response->data)){
-            CustomerMaster::where('id',$masterId)->update(['crm_unique_id'=>$return_response->data->Customer_Id,'customer_code'=>$return_response->data->CustomerCode]);
-           // print_r($msg); die();
-            // if ($update) Email::sendEmail(geAdminEmail(), $post->email, 'Reset Password', $msg);
-           }
+           
            return response()->json(['httpcode'=>200,'success'=>'OTP sent to your number']);
 
         }

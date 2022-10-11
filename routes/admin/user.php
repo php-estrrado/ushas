@@ -284,7 +284,7 @@ Route::post('/admin/language/status', [App\Http\Controllers\Admin\LanguageContro
 
 
 
-
+Route::get('/admin/stores', [App\Http\Controllers\Admin\StoresController::class, 'stores'])->name('admin.stores');
 
 
 

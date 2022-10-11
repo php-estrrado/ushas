@@ -35,7 +35,7 @@
                                     <tr>    
                                         <td class="align-middle select-checkbox"></td>
                                         <td>{{date('dmy',strtotime($row->created_at)).$row->id}}</td>
-                                        <td>{{$row->info->first_name}} {{$row->info->middle_name}} {{$row->info->last_name}}</td>
+                                        <td>{{@$row->info->first_name}} {{@$row->info->middle_name}} {{@$row->info->last_name}}</td>
                                         <td>{{$row->custEmail($row->email)}}</td>
                                         <td>{{$row->custPhone($row->phone)}}</td>
                                         <td>{{date('d M Y',strtotime($row->created_at))}}</td>

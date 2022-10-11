@@ -36,7 +36,7 @@
 								<div class="btn btn-list">
 									<!-- <a href="#" class="btn btn-info"><i class="fe fe-settings mr-1"></i> General Settings </a>
 									<a href="#" class="btn btn-danger"><i class="fe fe-printer mr-1"></i> Print </a> -->
-									<a data-toggle="modal" data-target="#SignUp"   class="btn btn-primary addmodule"><i class="fe fe-plus mr-1"></i> Add New</a>
+									<!-- <a data-toggle="modal" data-target="#SignUp"   class="btn btn-primary addmodule"><i class="fe fe-plus mr-1"></i> Add New</a> -->
 								</div>
 							</div>
 						</div>
@@ -97,7 +97,7 @@
 																	</td>
 																	<td class="align-middle">
 																		<div class="d-flex">
-																		<h6 class=" font-weight-bold">{{$name->first_name." ".$name->middle_name." ".$name->last_name}}</h6>
+																		<h6 class=" font-weight-bold">{{@$name->first_name." ".@$name->middle_name." ".@$name->last_name}}</h6>
                                                                         </div>
 																	</td>
 																	<td class="text-nowrap align-middle"><p style="overflow: hidden;white-space: nowrap;text-overflow: ellipsis; max-width: 100px;"> </p></td>
