@@ -64,6 +64,8 @@
                                                     @endforeach
                                                     <li><span class="profile-icon"><i class="fe fe-calendar"></i></span><span class="h6 mt-3">{{date('d M Y',strtotime($customer_mst->created_at))}}</span></li>
                                                     <li><span class="profile-icon"><i class="fe fe-globe"></i></span>@if($info->is_active==1)<span class="h6 mt-3 badge badge-primary">{{"Active"}}</span>@endif @if($info->is_active==0)<span class="h6 mt-3 badge badge-pill badge-danger" style="color:white">{{"Inactive"}}</span>@endif</li>
+                                                    <li><span class="profile-icon"><i class="fa fa-id-card" aria-hidden="true"></i></span><span class="h6 mt-3">PAN: {{ @$info->pan_number }} @if(isset($info->pan_file)) <a href="{{ config('app.storage_url').'/app/public/customer_profile/pan/'.$info->pan_file }}" target="_blank" class="ml-5">View</a> @endif</span></li>
+                                                    <li><span class="profile-icon"><i class="fa fa-id-card" aria-hidden="true"></i></span><span class="h6 mt-3">GST: {{ @$info->gst_number }} @if(isset($info->gst_file)) <a href="{{ config('app.storage_url').'/app/public/customer_profile/pan/'.$info->gst_file }}" target="_blank" class="ml-5">View</a> @endif</span></li>
 												</ul>
 											</div>
 										</div>
@@ -72,7 +74,7 @@
 								<div class="col-lg-4 col-md-auto">
 									<div class="text-lg-right btn-list mt-4 mt-lg-0">
 										<!--<a href="#" class="btn btn-light">Change Password</a>-->
-										<button data-toggle="modal" data-target="#SignUp" class="btn btn-primary">Edit Profile</button>
+										<!-- <button data-toggle="modal" data-target="#SignUp" class="btn btn-primary">Edit Profile</button> -->
 									</div>
 									<div class="mt-5">
 										<div class="main-profile-contact-list row">

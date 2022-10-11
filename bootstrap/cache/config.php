@@ -1,10 +1,10 @@
 <?php return array (
   'app' => 
   array (
-    'name' => 'Big Basket',
+    'name' => 'Ushas',
     'env' => 'local',
     'debug' => true,
-    'url' => 'http://localhost/ushas-dev',
+    'url' => 'http://localhost/ushas-dev/',
     'asset_url' => 'http://localhost/ushas-dev/public',
     'upload_url' => 'http://localhost/ushas-dev/uploads/api',
     'storage_url' => 'http://localhost/ushas-dev/uploads/storage',
@@ -393,7 +393,7 @@
       array (
         'driver' => 'local',
         'root' => 'C:\\wamp64\\www\\ushas-dev\\storage\\app/public',
-        'url' => 'http://localhost/ushas-dev/storage',
+        'url' => 'http://localhost/ushas-dev//storage',
         'visibility' => 'public',
       ),
       's3' => 
@@ -711,17 +711,17 @@
   array (
     'logo' => 'admin/assets/images/brand/bg_logo.jpg',
     'logo_login' => 'admin/assets/images/brand/logo.png',
-    'app_name' => 'Big Basket',
-    'copyright' => 'Copyright &copy; 2022  <a href=\'\'>Big Basket</a>. Designed by <a href=\'https://estrrado.com/\' target=\'_blank\'>Estrrado</a> All rights reserved.',
-    'dashboard_bg' => '#006fb4',
-    'menu_icon_color' => '#006fb4',
-    'btn_secondary' => '#006fb4',
+    'app_name' => 'Ushas',
+    'copyright' => 'Copyright &copy; 2022  <a href=\'\'>Ushas</a>. Designed by <a href=\'https://estrrado.com/\' target=\'_blank\'>Estrrado</a> All rights reserved.',
+    'dashboard_bg' => '#302F32',
+    'menu_icon_color' => '#302F32',
+    'btn_secondary' => '#6958be',
     'link_color' => '#705ec8',
-    'bg_primary_color' => '#006fb4',
-    'bg_primary_image' => 'admin/assets/images/brand/bg.jpg',
+    'bg_primary_color' => '#302F32',
+    'bg_primary_image' => '',
     'active_link' => '#705ec8',
-    'back_to_top' => '#006fb4',
-    'btn_primary' => '#006fb4',
+    'back_to_top' => '#6958be',
+    'btn_primary' => '#6958be',
     'btn_info' => '#5b7fff',
     'mailgun' => 
     array (
@@ -729,7 +729,7 @@
       'secret' => NULL,
       'endpoint' => 'api.mailgun.net',
     ),
-    'base_url' => 'http://localhost/big-basket',
+    'base_url' => 'http://localhost/ushas',
     'm_lang' => 'yes',
     'm_currency' => 'yes',
     'prod_type' => 'from_api',

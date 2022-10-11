@@ -68,6 +68,49 @@
 																</div>
 																		
 															</div>
+
+															<div class="col-md-6 col-lg-6 col-xl-6 col-sm-12">
+																<div class="form-group row">
+																	<label class="form-label col-md-4">PAN Number:</label>
+																	<div class="col-md-8">
+																	<p class="view_value">@if($customer->info){{ $customer->info->pan_number }}@endif</p>
+																</div>
+																</div>
+	
+															</div>
+
+															<div class="col-md-6 col-lg-6 col-xl-6 col-sm-12">
+																<div class="form-group row">
+																	<label class="form-label col-md-4">GST Number:</label>
+																	<div class="col-md-8">
+																	<p class="view_value">@if($customer->info){{ $customer->info->gst_number }}@endif</p>
+																</div>
+																</div>
+	
+															</div>
+															
+															<div class="col-md-6 col-lg-6 col-xl-6 col-sm-12">
+																<div class="form-group row">
+																	<label class="form-label col-md-4">PAN:</label>
+																	<div class="col-md-8">
+																@if($customer->info->pan_file!='')
+																<img alt="User Avatar" class="rounded-circle border p-0" style="width:128px;height:128px;" src="{{ config('app.storage_url').'/app/public/customer_profile/pan/'.$customer->info->pan_file }}">
+																@endif
+																</div>
+																</div>
+															</div>
+
+															
+															<div class="col-md-6 col-lg-6 col-xl-6 col-sm-12">
+																<div class="form-group row">
+																	<label class="form-label col-md-4">GST:</label>
+																	<div class="col-md-8">
+																@if($customer->info->gst_file!='')
+																<img alt="User Avatar" class="rounded-circle border p-0" style="width:128px;height:128px;" src="{{ config('app.storage_url').'/app/public/customer_profile/gst/'.$customer->info->gst_file }}">
+																@endif
+																</div>
+																</div>
+															</div>
 															
 														</div>
 														
