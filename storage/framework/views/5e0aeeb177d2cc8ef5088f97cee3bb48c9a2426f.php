@@ -124,19 +124,20 @@ $attr_bulk_ord="";
 ?>
 <div class="page-header">
     <div class="page-leftheader">
-        <h4 class="page-title mb-0">{{$title}}</h4>
+        <h4 class="page-title mb-0"><?php echo e($title); ?></h4>
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="#"><i class="fe fe-grid mr-2 fs-14"></i>Seller Management</a></li>
             <li class="breadcrumb-item"><a href="#" id="bc_list"><i class="fe fe-grid mr-2 fs-14"></i>Product List</a></li>
-            <li class="breadcrumb-item active" aria-current="page"><a href="#">{{$title}}</a></li>
+            <li class="breadcrumb-item active" aria-current="page"><a href="#"><?php echo e($title); ?></a></li>
         </ol>
     </div>
 </div>
 <div class="col-lg-12 col-md-12">
     <div class="card">
         <div class="card-body pb-2">
-            {{ Form::open(array('url' => "admin/product/save", 'id' => 'adminForm', 'name' => 'adminForm', 'class' => '','files'=>'true')) }}
-                 {{Form::hidden('id',$id,['id'=>'id'])}} 
+            <?php echo e(Form::open(array('url' => "admin/product/save", 'id' => 'adminForm', 'name' => 'adminForm', 'class' => '','files'=>'true'))); ?>
+
+                 <?php echo e(Form::hidden('id',$id,['id'=>'id'])); ?> 
 
                 <div class="tabs-menu mb-4">
                     <ul class="nav panel-tabs">
@@ -144,30 +145,33 @@ $attr_bulk_ord="";
                         <li><a href="#tab2" data-toggle="tab" id="nav_tab_2"><span>Product Info.</span></a></li>
                         <li><a href="#tab3" data-toggle="tab" id="nav_tab_3"><span>Media</span></a></li>
                         <!--<li><a href="#tab4" data-toggle="tab" id="nav_tab_4"><span>Attributes</span></a></li>-->
-                        <!--<li><a href="#tab5" data-toggle="tab" id="nav_tab_5" class="{{$conficLi}}"><span>Associative Products</span></a></li>-->
+                        <!--<li><a href="#tab5" data-toggle="tab" id="nav_tab_5" class="<?php echo e($conficLi); ?>"><span>Associative Products</span></a></li>-->
                    </ul>
                 </div>
                 <div class="row panel-body tabs-menu-body">
                     <div class="tab-content col-12">
-                        <div class="tab-pane active " id="tab1">@include('admin.products.details.general')</div>
-                        <div class="tab-pane" id="tab2">@include('admin.products.details.price_tax')</div>
-                        <div class="tab-pane" id="tab3">@include('admin.products.details.image')</div>
-                        <!--<div class="tab-pane attr" id="tab4">@include('admin.products.details.attribute')</div>-->
-                        <!--<div class="tab-pane asso" id="tab5">@if($prdType == 2 && $id > 0) @include('admin.products.details.associative_prds') @endif</div>-->
+                        <div class="tab-pane active " id="tab1"><?php echo $__env->make('admin.products.details.general', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?></div>
+                        <div class="tab-pane" id="tab2"><?php echo $__env->make('admin.products.details.price_tax', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?></div>
+                        <div class="tab-pane" id="tab3"><?php echo $__env->make('admin.products.details.image', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?></div>
+                        <!--<div class="tab-pane attr" id="tab4"><?php echo $__env->make('admin.products.details.attribute', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?></div>-->
+                        <!--<div class="tab-pane asso" id="tab5"><?php if($prdType == 2 && $id > 0): ?> <?php echo $__env->make('admin.products.details.associative_prds', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?> <?php endif; ?></div>-->
                     </div>
                 </div>
                 <div class="col-lg-12">
                     <div class="card-footer text-right">
-                        {{Form::hidden('can_submit',0,['id'=>'can_submit'])}}
+                        <?php echo e(Form::hidden('can_submit',0,['id'=>'can_submit'])); ?>
+
                         <button id="cancel_btn" type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                         <button id="save_btn" type="submit" class="btn btn-primary">Save</button>
                     </div>
                 </div>
-           {{Form::close()}}
+           <?php echo e(Form::close()); ?>
+
         </div>
     </div>
 </div>
 <!-- INTERNAL WYSIWYG Editor js -->
-<script src="{{URL::asset('admin/assets/js/form-editor.js')}}"></script>
+<script src="<?php echo e(URL::asset('admin/assets/js/form-editor.js')); ?>"></script>
 		
 
+<?php /**PATH C:\wamp64\www\ushas-dev\resources\views/admin/products/details.blade.php ENDPATH**/ ?>

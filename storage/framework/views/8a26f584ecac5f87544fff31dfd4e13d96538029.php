@@ -1,78 +1,90 @@
     <div class="card-header mb-4""><div class="card-title">General Information</div></div>
    <div class="col-lg-6 fl">
         <div class="form-group">
-            {{Form::label('lang_id','Language',['class'=>''])}} <span class="text-red">*</span>
-            {{Form::select('lang_id',$languages,$langId,['id'=>'lang_id','class'=>'form-control'])}}
+            <?php echo e(Form::label('lang_id','Language',['class'=>''])); ?> <span class="text-red">*</span>
+            <?php echo e(Form::select('lang_id',$languages,$langId,['id'=>'lang_id','class'=>'form-control'])); ?>
+
             <span class="error"></span>
         </div>
-    <!--     {{Form::hidden('lang_id',1,['id'=>'lang_id','class'=>'form-control  '])}} -->
+    <!--     <?php echo e(Form::hidden('lang_id',1,['id'=>'lang_id','class'=>'form-control  '])); ?> -->
     </div>
      <div class="col-lg-6 fl">
         
     </div>
     
     
-<!--     <div id="filter_div" class="col-lg-6 fl @if($id > 0) d-none @endif " >
+<!--     <div id="filter_div" class="col-lg-6 fl <?php if($id > 0): ?> d-none <?php endif; ?> " >
         <div class="form-group">
-            {{Form::label('opt_type','Choose Option',['class'=>''])}} <span class="text-red">*</span>
+            <?php echo e(Form::label('opt_type','Choose Option',['class'=>''])); ?> <span class="text-red">*</span>
             <div class="col-12">
             <label class="custom-control custom-radio custom-control-md col-md-6 fl">
-                {{Form::radio('prd_option','option1',$sellCkd,['id'=>'option1','class'=>'custom-control-input cus_radio'])}}
+                <?php echo e(Form::radio('prd_option','option1',$sellCkd,['id'=>'option1','class'=>'custom-control-input cus_radio'])); ?>
+
                 <span class="custom-control-label custom-control-label-md"> Create New </span>
             </label>
             <label class="custom-control custom-radio custom-control-md col-md-6 fl">
-                {{Form::radio('prd_option','option2',$adminCkd,['id'=>'option2','class'=>'custom-control-input cus_radio'])}}
+                <?php echo e(Form::radio('prd_option','option2',$adminCkd,['id'=>'option2','class'=>'custom-control-input cus_radio'])); ?>
+
                 <span class="custom-control-label custom-control-label-md">Select From Admin</span>
             </label>
             </div><div class="clr"></div>
         </div>
     </div> -->
-    <div id="prd_type_div" class="col-lg-6 fl @if($id > 0) d-none @endif ">
+    <div id="prd_type_div" class="col-lg-6 fl <?php if($id > 0): ?> d-none <?php endif; ?> ">
         <!--<div class="form-group">-->
-        <!--    {{Form::label('prd_type','Product Type',['class'=>''])}} <span class="text-red">*</span>-->
-        <!--    {{Form::select('prd_type',$prdTypes,$prdType,['id'=>'prd_type','class'=>'form-control', 'placeholder'=>'Select Product Type'])}}-->
+        <!--    <?php echo e(Form::label('prd_type','Product Type',['class'=>''])); ?> <span class="text-red">*</span>-->
+        <!--    <?php echo e(Form::select('prd_type',$prdTypes,$prdType,['id'=>'prd_type','class'=>'form-control', 'placeholder'=>'Select Product Type'])); ?>-->
         <!--    <span class="error"></span>-->
         <!--</div>-->
     </div><div class="clr"></div>
     
     <!--<div id="config_attr_div" class="col-12 no-disp">-->
     <!--    <div class="form-group">-->
-    <!--        {{Form::label('config_attrs','Select Configurable Attributes',['class'=>'col-12 tal'])}} <span class="text-red">*</span>-->
-    <!--        @if($configAttrs && count($configAttrs) > 0) @foreach($configAttrs  as $row)-->
+    <!--        <?php echo e(Form::label('config_attrs','Select Configurable Attributes',['class'=>'col-12 tal'])); ?> <span class="text-red">*</span>-->
+    <!--        <?php if($configAttrs && count($configAttrs) > 0): ?> <?php $__currentLoopData = $configAttrs; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $row): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>-->
     <!--            <div class="col-lg-3 col-md-4 col-sm-6 fl"><label class="custom-control custom-checkbox">-->
-    <!--                {{Form::checkbox('config[]',$row->id,false,['id'=>'config_attr_'.$row->id,'class'=>'custom-control-input ckIn'])}}-->
-    <!--                <span class="custom-control-label">{{$row->name}}</span>-->
+    <!--                <?php echo e(Form::checkbox('config[]',$row->id,false,['id'=>'config_attr_'.$row->id,'class'=>'custom-control-input ckIn'])); ?>-->
+    <!--                <span class="custom-control-label"><?php echo e($row->name); ?></span>-->
     <!--            </label></div>-->
-    <!--        @endforeach @endif-->
+    <!--        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?> <?php endif; ?>-->
     <!--        <span class="error"></span>-->
     <!--    </div>-->
     <!--</div>-->
     <div id="admin_div" class="col-lg-6 fl no-disp">
         <div class="form-group">
-            {{Form::label('admin_prd_id','Select Admin Product',['class'=>''])}} <span class="text-red">*</span>
-            {{Form::select('admin_prd_id',$adminProducts,$adminPrd,['id'=>'admin_prd_id','class'=>'form-control', 'placeholder'=>'Select Product'])}}
+            <?php echo e(Form::label('admin_prd_id','Select Admin Product',['class'=>''])); ?> <span class="text-red">*</span>
+            <?php echo e(Form::select('admin_prd_id',$adminProducts,$adminPrd,['id'=>'admin_prd_id','class'=>'form-control', 'placeholder'=>'Select Product'])); ?>
+
             <span class="error"></span>
         </div>
     </div>
     <div id="seller_div" class="col-lg-6 fl">
         <div class="form-group">
-            {{Form::label('name','Product Name',['class'=>''])}} <span class="text-red">*</span>
-            {{Form::text('prd[name]',$prdName,['id'=>'name','class'=>'form-control admin', 'placeholder'=>'Product Name'])}}
+            <?php echo e(Form::label('name','Product Name',['class'=>''])); ?> <span class="text-red">*</span>
+            <?php echo e(Form::text('prd[name]',$prdName,['id'=>'name','class'=>'form-control admin', 'placeholder'=>'Product Name'])); ?>
+
             <span class="error"></span>
         </div>
     </div>
     <div class="col-lg-6 fl">
         <div class="form-group">
-            {{Form::label('category_id','Category',['class'=>''])}} <span class="text-red">*</span>
-            <!--{{Form::select('prd[category_id]',$categories,$catId,['id'=>'category_id','class'=>'form-control admin', 'placeholder'=>'Select Category'])}}-->
+            <?php echo e(Form::label('category_id','Category',['class'=>''])); ?> <span class="text-red">*</span>
+            <!--<?php echo e(Form::select('prd[category_id]',$categories,$catId,['id'=>'category_id','class'=>'form-control admin', 'placeholder'=>'Select Category'])); ?>-->
             
-            <select class="form-control select2 @error('category') is-invalid @enderror admin" id="category_id" onchange="loadsubcat()"  name="prd[category_id]">
+            <select class="form-control select2 <?php $__errorArgs = ['category'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?> admin" id="category_id" onchange="loadsubcat()"  name="prd[category_id]">
             <option value="">Select</option>
           
-            @foreach($categories as $key=>$cat )
+            <?php $__currentLoopData = $categories; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $key=>$cat): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
           
-            <option value="{{ $key }}" @if($key==$catId) {{ "selected" }} @endif>{{ $cat }}</option>
-            @endforeach
+            <option value="<?php echo e($key); ?>" <?php if($key==$catId): ?> <?php echo e("selected"); ?> <?php endif; ?>><?php echo e($cat); ?></option>
+            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
             </select>
             <span class="error"></span>
         </div>
@@ -80,9 +92,9 @@
     <div class="clearfix"></div>
     <div class="col-lg-6 fl">
         <div class="form-group">
-            {{Form::label('sub_category_id','Sub Category',['class'=>''])}} <span class="text-red">*</span>
-            <!--{{Form::select('prd[sub_category_id]',$sub_cats,$subCatId,['id'=>'sub_category_id','class'=>'form-control admin', 'placeholder'=>'Select Sub Category'])}}-->
-            <input type="text" id="sub_category_id" placeholder="Type to filter" name="prd[sub_category_id]" autocomplete="off" value="@if(isset($subCatId)) {{ $subCatId }} @endif" hidden />
+            <?php echo e(Form::label('sub_category_id','Sub Category',['class'=>''])); ?> <span class="text-red">*</span>
+            <!--<?php echo e(Form::select('prd[sub_category_id]',$sub_cats,$subCatId,['id'=>'sub_category_id','class'=>'form-control admin', 'placeholder'=>'Select Sub Category'])); ?>-->
+            <input type="text" id="sub_category_id" placeholder="Type to filter" name="prd[sub_category_id]" autocomplete="off" value="<?php if(isset($subCatId)): ?> <?php echo e($subCatId); ?> <?php endif; ?>" hidden />
             <input type="text" id="sub-category-drop" class="form-control admin " value="" placeholder="Select Subcategory" readonly style=";">
 																
             <span class="error"></span>
@@ -90,100 +102,111 @@
     </div>
     <div class="col-lg-6 fl">
         <div class="form-group">
-            {{Form::label('brand_id','Brand',['class'=>''])}} 
-            {{Form::select('prd[brand_id]',$brands,$brandId,['id'=>'brand_id','class'=>'form-control admin', 'placeholder'=>'Select Brand'])}}
+            <?php echo e(Form::label('brand_id','Brand',['class'=>''])); ?> 
+            <?php echo e(Form::select('prd[brand_id]',$brands,$brandId,['id'=>'brand_id','class'=>'form-control admin', 'placeholder'=>'Select Brand'])); ?>
+
             <span class="error"></span>
         </div>
     </div>
     <div class="clearfix"></div>
     <div class="col-lg-6 fl">
         <div class="form-group">
-            {{Form::label('short_desc','Short Description',['class'=>''])}} <span class="text-red">*</span>
-            {{Form::textarea('prd[short_desc]',$sDesc,['id'=>'short_desc','class'=>'form-control','rows'=>2])}}
+            <?php echo e(Form::label('short_desc','Short Description',['class'=>''])); ?> <span class="text-red">*</span>
+            <?php echo e(Form::textarea('prd[short_desc]',$sDesc,['id'=>'short_desc','class'=>'form-control','rows'=>2])); ?>
+
             <span class="error"></span>
         </div>
     </div>
     <div class="col-lg-6 fl">
         <div class="form-group">
-            {{Form::label('is_active','Status',['class'=>''])}} 
-            {{Form::select('prd[is_active]',[1=>'Active',0=>'Inactive'],$status,['id'=>'is_active','class'=>'form-control'])}}
+            <?php echo e(Form::label('is_active','Status',['class'=>''])); ?> 
+            <?php echo e(Form::select('prd[is_active]',[1=>'Active',0=>'Inactive'],$status,['id'=>'is_active','class'=>'form-control'])); ?>
+
             <span class="error"></span>
         </div>
     </div><div class="clr"></div>
     <div class="col-lg-6 fl">
         <div class="form-group">
-            {{Form::label('desc','Long Description',['class'=>''])}}
-            {{Form::textarea('prd[desc]',$desc,['id'=>'desc','class'=>'form-control longdesc'])}}
+            <?php echo e(Form::label('desc','Long Description',['class'=>''])); ?>
+
+            <?php echo e(Form::textarea('prd[desc]',$desc,['id'=>'desc','class'=>'form-control longdesc'])); ?>
+
         </div>
     </div>
     <div class="col-lg-6 fl">
         <div class="form-group">
-            {{Form::label('content','Content',['class'=>''])}} 
-            {{Form::textarea('prd[content]',$content,['id'=>'content','class'=>'form-control content'])}}
+            <?php echo e(Form::label('content','Content',['class'=>''])); ?> 
+            <?php echo e(Form::textarea('prd[content]',$content,['id'=>'content','class'=>'form-control content'])); ?>
+
         </div>
     </div>
      <div class="col-lg-12 fl">
         <div class="form-group" >
-            {{Form::label('specification','Specification',['class'=>''])}}
+            <?php echo e(Form::label('specification','Specification',['class'=>''])); ?>
+
             <div id="quillEditor" ></div>
-            {{Form::hidden('prd[specification]',$specification,['id'=>'specification','class'=>'form-control  '])}}
+            <?php echo e(Form::hidden('prd[specification]',$specification,['id'=>'specification','class'=>'form-control  '])); ?>
+
         </div>
     </div>
     
     <div class="col-lg-6 fl">
         <div class="form-group">
-            {{Form::label('is_featured','Featured',['class'=>'featured form-label'])}} 
-            {{ Form::checkbox('prd[is_featured]',1,$featured, array('id'=>'is_featured')) }} <p>(Include this product under featured products list)</p>
+            <?php echo e(Form::label('is_featured','Featured',['class'=>'featured form-label'])); ?> 
+            <?php echo e(Form::checkbox('prd[is_featured]',1,$featured, array('id'=>'is_featured'))); ?> <p>(Include this product under featured products list)</p>
         </div>
     </div>
      <div class="col-lg-6 fl">
         <div class="form-group">
-            {{Form::label('daily_deals','Daily Deals',['class'=>'daily_deals form-label'])}} 
-            {{ Form::checkbox('prd[daily_deals]',1,$daily_deals, array('id'=>'daily_deals')) }} <p>(Include this product under Daily deals product list)</p>
+            <?php echo e(Form::label('daily_deals','Daily Deals',['class'=>'daily_deals form-label'])); ?> 
+            <?php echo e(Form::checkbox('prd[daily_deals]',1,$daily_deals, array('id'=>'daily_deals'))); ?> <p>(Include this product under Daily deals product list)</p>
         </div>
     </div>
     <div class="col-lg-6 fl">
         <div class="form-group">
-            {{Form::label('out_of_stock_selling','Out of stock selling',['class'=>'daily_deals form-label'])}} 
-            {{ Form::checkbox('prd[out_of_stock_selling]',1,$out_of_stock_selling, array('id'=>'out_of_stock_selling')) }} <p>(Continue selling when out of stock)</p>
+            <?php echo e(Form::label('out_of_stock_selling','Out of stock selling',['class'=>'daily_deals form-label'])); ?> 
+            <?php echo e(Form::checkbox('prd[out_of_stock_selling]',1,$out_of_stock_selling, array('id'=>'out_of_stock_selling'))); ?> <p>(Continue selling when out of stock)</p>
         </div>
     </div>
     <div class="col-lg-6 fl">
         <div class="form-group">
-            {{Form::label('is_comingsoon','Coming Soon',['class'=>'daily_deals form-label'])}} 
-            {{ Form::checkbox('prd[is_comingsoon]',1,$is_comingsoon, array('id'=>'is_comingsoon')) }} <p>(Coming soon products are not purchasable.)</p>
+            <?php echo e(Form::label('is_comingsoon','Coming Soon',['class'=>'daily_deals form-label'])); ?> 
+            <?php echo e(Form::checkbox('prd[is_comingsoon]',1,$is_comingsoon, array('id'=>'is_comingsoon'))); ?> <p>(Coming soon products are not purchasable.)</p>
         </div>
     </div>
     <div class="col-lg-6 fl">
         <div class="form-group">
-            {{Form::label('tag_id','Tags',['class'=>''])}} 
-            {{Form::select('prd[tag_id]',$tags,$tagId,['id'=>'tag_ids','class'=>'form-control admin', 'placeholder'=>'Select Tag'])}}
+            <?php echo e(Form::label('tag_id','Tags',['class'=>''])); ?> 
+            <?php echo e(Form::select('prd[tag_id]',$tags,$tagId,['id'=>'tag_ids','class'=>'form-control admin', 'placeholder'=>'Select Tag'])); ?>
+
             <span class="error"></span>
         </div>
     </div> 
      <div class="col-lg-12 fl">
         <div class="form-group">
-            {{Form::label('rltd_prds','Related Products',['class'=>''])}} 
+            <?php echo e(Form::label('rltd_prds','Related Products',['class'=>''])); ?> 
             <select class="form-control chosen-select" data-placeholder="Select Product" multiple  name="prd_id[]" id="prd_id"  >
-            @if($products && count($products) > 0)
-            @foreach($products as $row)
-            <option <?php if(in_array($row->id,$relatedprods)) { echo "selected"; } ?> value="{{ $row->id }}">{{ $row->name }}</option>
-            @endforeach
-            @endif
+            <?php if($products && count($products) > 0): ?>
+            <?php $__currentLoopData = $products; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $row): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+            <option <?php if(in_array($row->id,$relatedprods)) { echo "selected"; } ?> value="<?php echo e($row->id); ?>"><?php echo e($row->name); ?></option>
+            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+            <?php endif; ?>
             </select>
             <span class="error"></span>
         </div>
     </div>   
   <!--   <div class="col-lg-6 fl">
         <div class="form-group">
-            {{Form::label('commission','Profit Sharing',['class'=>'daily_deals form-label'])}} 
-            {{Form::number('prd[commission]',$commission,['id'=>'commission', 'class'=>'form-control','placeholder'=>'Profit Sharing','max'=>9999,'min'=>0])}}
+            <?php echo e(Form::label('commission','Profit Sharing',['class'=>'daily_deals form-label'])); ?> 
+            <?php echo e(Form::number('prd[commission]',$commission,['id'=>'commission', 'class'=>'form-control','placeholder'=>'Profit Sharing','max'=>9999,'min'=>0])); ?>
+
         </div>
     </div>
     <div class="col-lg-6 fl">
         <div class="form-group">
-            {{Form::label('commi_type','Commission Type',['class'=>''])}} 
-            {{Form::select('prd[commi_type]',['%'=>'%','amount'=>'Amount'],$commi_type,['id'=>'commi_type','class'=>'form-control '])}}
+            <?php echo e(Form::label('commi_type','Commission Type',['class'=>''])); ?> 
+            <?php echo e(Form::select('prd[commi_type]',['%'=>'%','amount'=>'Amount'],$commi_type,['id'=>'commi_type','class'=>'form-control '])); ?>
+
             <span class="error"></span>
         </div>
     </div>  -->
@@ -249,7 +272,7 @@ $(function() {
     /**
      * Step2. save to server
      *
-     * @param {File} file
+     * @param  {File} file
      */
     function saveToServer(file) {
       const fd = new FormData();
@@ -258,9 +281,9 @@ $(function() {
       const xhr = new XMLHttpRequest();
 
 
-      xhr.open('POST', "{{ url('/admin/editor-image') }}", true);
+      xhr.open('POST', "<?php echo e(url('/admin/editor-image')); ?>", true);
       // xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-var csrfToken = "{{ csrf_token() }}";
+var csrfToken = "<?php echo e(csrf_token()); ?>";
 xhr.setRequestHeader('X-CSRF-TOKEN', csrfToken);
       xhr.onload = () => {
         if (xhr.status === 200) {
@@ -277,7 +300,7 @@ xhr.setRequestHeader('X-CSRF-TOKEN', csrfToken);
     /**
      * Step3. insert image url to rich editor.
      *
-     * @param {string} url
+     * @param  {string} url
      */
     function insertToEditor(url) {
       // push image url to rich editor.
@@ -291,7 +314,7 @@ xhr.setRequestHeader('X-CSRF-TOKEN', csrfToken);
     });
 
 //     var specification = $('#specification').val();
-// editor.setContents( "{{ ($specification) }}" );
+// editor.setContents( "<?php echo e(($specification)); ?>" );
 editor.setContents(JSON.parse($('#specification').val()), 'api');
 
 });
@@ -323,8 +346,8 @@ $(".chosen-select").chosen({
         
          $.ajax({
             type: "POST",
-            url: '{{url("/admin/tags/subcategory")}}',
-            data: { "_token": "{{csrf_token()}}", category_id: category_id},
+            url: '<?php echo e(url("/admin/tags/subcategory")); ?>',
+            data: { "_token": "<?php echo e(csrf_token()); ?>", category_id: category_id},
             success: function (data) {
             	var obj = JSON.parse(data);
             
@@ -366,7 +389,7 @@ $(".chosen-select").chosen({
                 var cat_id = $('#category_id').val();
             var subcat_id = $('#sub_category_id').val();
             $.ajax({
-            url:"{{ route('taglist_ajax') }}",
+            url:"<?php echo e(route('taglist_ajax')); ?>",
             type:"POST",
             data: {
             cat_id: cat_id,subcat_id:subcat_id
@@ -390,4 +413,4 @@ $('.longdesc, .maincontent').richText();
 // $('.maincontent').richText();
 
 </script>
-                        
+                        <?php /**PATH C:\wamp64\www\ushas-dev\resources\views/admin/products/details/general.blade.php ENDPATH**/ ?>

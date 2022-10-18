@@ -107,6 +107,7 @@ if(isset($request->is_rating)){
             'sort_order'=>0,
             'is_active'=>$request->status,
             'is_rating'=>$rating,
+            // 'gender'=>$request->gender,
             'is_deleted'=>0,
             'created_by'=>auth()->user()->id,
             'modified_by'=>auth()->user()->id,
@@ -215,6 +216,7 @@ if(isset($request->is_rating)){
 				
 				$data1['is_rating'] = $rating;
 			
+            // $data1['gender'] = $request->gender;
 			$data1['image'] = $filename;
 			$data1['is_active'] = $request->status;
 			$data1['is_deleted'] = 0;

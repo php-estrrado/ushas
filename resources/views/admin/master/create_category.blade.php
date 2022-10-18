@@ -115,25 +115,25 @@
                                                                 </select>
                                                             </div>
                                                         </div>
-                                                        {{-- <div class="col-sm-6 col-md-6">
+                                                       <!--   <div class="col-sm-12 col-md-12">
                                                             <div class="form-group">
-                                                                <label class="form-label">Daily Product <span class="text-red">*</span></label>
+                                                                <label class="form-label">Gender <span class="text-red">*</span></label>
                                                                     <div class="row">
                                                                     <div class="col-md-2">
                                                                     <label class="custom-control custom-radio">
-                                                                        <input type="radio" class="custom-control-input" name="daily_pro" value="1" checked>
-                                                                        <span class="custom-control-label">Yes</span>
+                                                                        <input type="radio" class="custom-control-input" name="gender" value="male" checked>
+                                                                        <span class="custom-control-label">Male</span>
                                                                     </label>
                                                                     </div>
                                                                     <div class="col-md-2">
                                                                     <label class="custom-control custom-radio">
-                                                                        <input type="radio" class="custom-control-input" name="daily_pro" value="0" checked>
-                                                                        <span class="custom-control-label">No</span>
+                                                                        <input type="radio" class="custom-control-input" name="gender" value="female" >
+                                                                        <span class="custom-control-label">Female</span>
                                                                     </label>
                                                                     </div>
                                                                 </div>
                                                             </div>
-                                                        </div> --}}
+                                                        </div> --> 
                                                         <div class="col-lg-4 col-md-4 col-sm-12">
                                                             <label class="form-label">Category Image <span class="text-red">*</span></label>
                                                             <p>(Image type .png,.jpeg)</p>
