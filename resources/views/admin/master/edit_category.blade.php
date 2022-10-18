@@ -98,7 +98,25 @@
                                                                 </select>
                                                             </div>
                                                         </div>
-
+                                                        <!--   <div class="col-sm-12 col-md-12">
+                                                            <div class="form-group">
+                                                                <label class="form-label">Gender <span class="text-red">*</span></label>
+                                                                    <div class="row">
+                                                                    <div class="col-md-2">
+                                                                    <label class="custom-control custom-radio">
+                                                                        <input type="radio" class="custom-control-input" name="gender" value="male" <?php if($category->gender=='male'){ echo "checked";}?>>
+                                                                        <span class="custom-control-label">Male</span>
+                                                                    </label>
+                                                                    </div>
+                                                                    <div class="col-md-2">
+                                                                    <label class="custom-control custom-radio">
+                                                                        <input type="radio" class="custom-control-input" name="gender" value="female" <?php if($category->gender=='female'){ echo "checked";}?>>
+                                                                        <span class="custom-control-label">Female</span>
+                                                                    </label>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div> -->
                                                         <div class="col-lg-4 col-md-4 col-sm-12">
                                                             <label class="form-label">Category Image <span class="text-red">*</span></label>
                                                             <div class="d-flex">

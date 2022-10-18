@@ -150,6 +150,12 @@
     </div>
     <div class="col-lg-6 fl">
         <div class="form-group">
+            {{Form::label('is_comingsoon','Coming Soon',['class'=>'daily_deals form-label'])}} 
+            {{ Form::checkbox('prd[is_comingsoon]',1,$is_comingsoon, array('id'=>'is_comingsoon')) }} <p>(Coming soon products are not purchasable.)</p>
+        </div>
+    </div>
+    <div class="col-lg-6 fl">
+        <div class="form-group">
             {{Form::label('tag_id','Tags',['class'=>''])}} 
             {{Form::select('prd[tag_id]',$tags,$tagId,['id'=>'tag_ids','class'=>'form-control admin', 'placeholder'=>'Select Tag'])}}
             <span class="error"></span>

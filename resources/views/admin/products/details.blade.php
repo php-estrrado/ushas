@@ -14,14 +14,14 @@ if($product){
     $desc           =   getContent($product->desc_cnt_id,$langId);      $content            =       getContent($product->content_cnt_id,$langId);
      if(isset($product->spec_cnt_id)) { $specification            =       getContent($product->spec_cnt_id,$langId);  }else { $specification = '';   } 
     
-    $featured         =   $product->is_featured; $daily_deals         =   $product->daily_deals; $out_of_stock_selling = $product->out_of_stock_selling;
+    $featured         =   $product->is_featured; $daily_deals         =   $product->daily_deals; $out_of_stock_selling = $product->out_of_stock_selling; $is_comingsoon = $product->is_comingsoon;
     if($adminPrd    >   0){ $sellCkd = false; $adminCkd = true; }else{  $sellCkd = true; $adminCkd  =   false; }
     if(isset($dimensions)){  $weight  =   $dimensions->weight; $length  =   $dimensions->length; $width  =   $dimensions->width; $height  =   $dimensions->height; }else{ 
         $weight  =   $length  =   $width  =   $height  =  ''; } 
 }else{ 
     $weight  =   $length  =   $width  =   $height  =  ''; $commission = 0; $commi_type = '%'; $stock_val = $min_order = $bulk_order = 0;
     $adminPrd = $id =   0; $commi = $prdType = $prdName = $catId = $subCatId = $tagId = $brandId = $sDesc = $desc = $content = $price = $sPrice = $taxId = $stDate = $edDate = $specification = ''; 
-    $status         =   1;  $featured   = $daily_deals      = $out_of_stock_selling    = 0; $sellerId = 0; $sellCkd = true; $adminCkd = false; $prdAssAttrs = []; $id = 0;
+    $status         =   1;  $featured   = $daily_deals      = $out_of_stock_selling   = $is_comingsoon = 0; $sellerId = 0; $sellCkd = true; $adminCkd = false; $prdAssAttrs = []; $id = 0;
 }
 if($prdType == 2)   {   $conficLi = ''; }else{ $conficLi = 'no-disp'; } 
 if(isset($variationHist) || (@$product->platform =="odoo" && $product->product_type ==2)){

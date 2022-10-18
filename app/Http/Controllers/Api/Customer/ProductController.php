@@ -93,7 +93,7 @@ class ProductController extends Controller
                     if($row->brand_id)
                     {
                     $prd_list['brand_id']=$row->brand_id;
-                    $prd_list['brand_name']=$this->get_content($row->brand->brand_name_cid,$lang);
+                    $prd_list['brand_name']=$this->get_content(@$row->brand->brand_name_cid,$lang);
                     }
                     else
                     {
@@ -296,7 +296,7 @@ class ProductController extends Controller
                     if($row->brand_id)
                     {
                     $prd_list['brand_id']=$row->brand_id;
-                    $prd_list['brand_name']=$this->get_content($row->brand->brand_name_cid,$lang);
+                    $prd_list['brand_name']=$this->get_content(@$row->brand->brand_name_cid,$lang);
                     }
                     else
                     {
@@ -519,7 +519,7 @@ class ProductController extends Controller
                     if($row->brand_id)
                     {
                     $prd_list['brand_id']=$row->brand_id;
-                    $prd_list['brand_name']=$this->get_content($row->brand->brand_name_cid,$lang);
+                    $prd_list['brand_name']=$this->get_content(@$row->brand->brand_name_cid,$lang);
                     }
                     else
                     {
@@ -1723,7 +1723,7 @@ class ProductController extends Controller
                     if($row->brand_id)
                     {
                     $prd_list['brand_id']=$row->brand_id;
-                    $prd_list['brand_name']=$this->get_content($row->brand->brand_name_cid,$lang);
+                    $prd_list['brand_name']=$this->get_content(@$row->brand->brand_name_cid,$lang);
                     }
                     else
                     {
@@ -1981,7 +1981,7 @@ class ProductController extends Controller
                     if($row->brand_id)
                     {
                     $prd_list['brand_id']=$row->brand_id;
-                    $prd_list['brand_name']=$this->get_content($row->brand->brand_name_cid,$lang);
+                    $prd_list['brand_name']=$this->get_content(@$row->brand->brand_name_cid,$lang);
                     }
                     else
                     {
@@ -2279,7 +2279,7 @@ class ProductController extends Controller
                     if($row->brand_id)
                     {
                     $prd_list['brand_id']=$row->brand_id;
-                    $prd_list['brand_name']=$this->get_content($row->brand->brand_name_cid,$lang);
+                    $prd_list['brand_name']=$this->get_content(@$row->brand->brand_name_cid,$lang);
                     }
                     else
                     {
@@ -2543,7 +2543,7 @@ class ProductController extends Controller
                     if($row->brand_id)
                     {
                     $prd_list['brand_id']=$row->brand_id;
-                    $prd_list['brand_name']=$this->get_content($row->brand->brand_name_cid,$lang);
+                    $prd_list['brand_name']=$this->get_content(@$row->brand->brand_name_cid,$lang);
                     }
                     else
                     {
@@ -2810,7 +2810,7 @@ class ProductController extends Controller
                     if($row->brand_id)
                     {
                     $prd_list['brand_id']=$row->brand_id;
-                    $prd_list['brand_name']=$this->get_content($row->brand->brand_name_cid,$lang);
+                    $prd_list['brand_name']=$this->get_content(@$row->brand->brand_name_cid,$lang);
                     }
                     else
                     {
@@ -3070,7 +3070,7 @@ class ProductController extends Controller
                     if($row->brand_id)
                     {
                     $prd_list['brand_id']=$row->brand_id;
-                    $prd_list['brand_name']=$this->get_content($row->brand->brand_name_cid,$lang);
+                    $prd_list['brand_name']=$this->get_content(@$row->brand->brand_name_cid,$lang);
                     }
                     else
                     {
@@ -3328,7 +3328,7 @@ class ProductController extends Controller
                     if($row->brand_id)
                     {
                     $prd_list['brand_id']=$row->brand_id;
-                    $prd_list['brand_name']=$this->get_content($row->brand->brand_name_cid,$lang);
+                    $prd_list['brand_name']=$this->get_content(@$row->brand->brand_name_cid,$lang);
                     }
                     else
                     {
@@ -3649,7 +3649,7 @@ class ProductController extends Controller
                     if($row->brand_id)
                     {
                     $prd_list['brand_id']=$row->brand_id;
-                    $prd_list['brand_name']=$this->get_content($row->brand->brand_name_cid,$lang);
+                    $prd_list['brand_name']=$this->get_content(@$row->brand->brand_name_cid,$lang);
                     }
                     else
                     {
@@ -3938,7 +3938,7 @@ class ProductController extends Controller
                     if($row->brand_id)
                     {
                     $prd_list['brand_id']=$row->brand_id;
-                    $prd_list['brand_name']=$this->get_content($row->brand->brand_name_cid,$lang);
+                    $prd_list['brand_name']=$this->get_content(@$row->brand->brand_name_cid,$lang);
                     }
                     else
                     {
@@ -5511,7 +5511,7 @@ class ProductController extends Controller
                     if($row->brand_id)
                     {
                     $prd_list['brand_id']=$row->brand_id;
-                    $prd_list['brand_name']=$this->get_content($row->brand->brand_name_cid,$lang);
+                    $prd_list['brand_name']=$this->get_content(@$row->brand->brand_name_cid,$lang);
                     }
                     else
                     {
@@ -5769,7 +5769,7 @@ class ProductController extends Controller
                     if($row->brand_id)
                     {
                     $prd_list['brand_id']=$row->brand_id;
-                    $prd_list['brand_name']=$this->get_content($row->brand->brand_name_cid,$lang);
+                    $prd_list['brand_name']=$this->get_content(@$row->brand->brand_name_cid,$lang);
                     }
                     else
                     {
@@ -6012,7 +6012,7 @@ class ProductController extends Controller
                     if($row->brand_id)
                     {
                     $prd_list['brand_id']=$row->brand_id;
-                    $prd_list['brand_name']=$this->get_content($row->brand->brand_name_cid,$lang);
+                    $prd_list['brand_name']=$this->get_content(@$row->brand->brand_name_cid,$lang);
                     }
                     else
                     {

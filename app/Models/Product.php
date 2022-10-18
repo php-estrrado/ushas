@@ -12,7 +12,7 @@ class Product extends Model{
     protected $table = 'prd_products';
     protected $fillable = [
         'seller_id','product_type','category_id','sub_category_id','brand_id','tax_id','tag_id','name','name_cnt_id ','short_desc_cnt_id','desc_cnt_id','content_cnt_id','spec_cnt_id','is_featured','daily_deals','min_order','bulk_order',
-        'is_out_of_stock','out_of_stock_selling','min_stock_alert','commission','commi_type','is_approved','visible','admin_prd_id','is_active','created_by','platform','odoo_id','sku'
+        'is_out_of_stock','out_of_stock_selling','min_stock_alert','commission','commi_type','is_approved','visible','admin_prd_id','is_active','created_by','platform','odoo_id','sku','is_comingsoon'
     ];
     public function prdType(){ return $this->belongsTo(ProductType ::class, 'product_type'); }
     public function category(){ return $this->belongsTo(Category ::class, 'category_id'); }
