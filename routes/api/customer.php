@@ -231,3 +231,9 @@ Route::post('/customer/shocking-sale', [App\Http\Controllers\Api\Customer\Homepa
 
 Route::post('/customer/profile-image/update', [App\Http\Controllers\Api\Customer\AccountController::class, 'prof_image']);
 
+Route::post('/customer/home/banners', [App\Http\Controllers\Api\Customer\Homepage::class, 'home_banners']);
+Route::post('/customer/home/coming-soon', [App\Http\Controllers\Api\Customer\Homepage::class, 'home_coming_soon']);
+Route::post('/customer/home/daily-deals', [App\Http\Controllers\Api\Customer\Homepage::class, 'home_daily_deals']);
+Route::post('/customer/home/trending', [App\Http\Controllers\Api\Customer\Homepage::class, 'home_trending_products']);
+Route::post('/customer/home/featured', [App\Http\Controllers\Api\Customer\Homepage::class, 'home_featured']);
+Route::post('/customer/home/explore', [App\Http\Controllers\Api\Customer\Homepage::class, 'home_explore']);
