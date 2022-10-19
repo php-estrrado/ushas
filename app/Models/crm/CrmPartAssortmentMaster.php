@@ -13,6 +13,7 @@ class CrmPartAssortmentMaster extends Model
     protected $table = 'crm_part_assortment_master';
     protected $guarded=[];
     
-    
+    public function Assortments(){ return $this->belongsTo(CrmAssortmentMaster ::class, 'AssortmentID'); } 
+    public function AssortmentsDetail(){ return $this->hasMany(CrmPartAssortmentDetails ::class, 'ProductAssortmentID'); } 
            
 }

@@ -13,6 +13,7 @@ class CrmProduct extends Model
     protected $table = 'crm_product';
     protected $guarded=[];
     
-    
-           
+    public function childProducts(){ return $this->hasMany(CrmChildProductsMaster ::class, 'ProductID'); } 
+    public function productAssortmentMaster(){ return $this->hasMany(CrmPartAssortmentMaster ::class, 'ProductID'); } 
+    public function prdPrice(){ return $this->hasOne(CrmSalesPriceList ::class, 'Part_id')->where('DelStatus',0); }         
 }

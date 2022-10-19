@@ -7,10 +7,10 @@ use Illuminate\Database\Eloquent\Model;
 use DB;
 use App\Models\customer\CustomerAddressType;
 use App\Models\SalesOrderAddress;
-class CrmPriceList extends Model
+class CrmSalesPriceList extends Model
 {
     use HasFactory;
-    protected $table = 'crm_PriceList';
+    protected $table = 'crm_SalesPriceList';
     protected $guarded=[];
     
     
