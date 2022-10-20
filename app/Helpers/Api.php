@@ -280,9 +280,9 @@ if (!function_exists('get_crm_price')){
        if(isset($user['crm_customer_type']))
        {
 
-            $crm_price = $prdid->crmProduct->prdPrice;
-            $crm_price = CrmSalesPriceList::where('DelStatus',0)->where('Part_id',$prdid->crmProduct->id)->where('CustomerTypeId',$user['crm_customer_type'])->where('PriceTypeId',1)->whereDate('FromDate', '>=', date("Y-m-d"))->first();
-
+            // $crm_price = $prdid->crmProduct->prdPrice;
+            $crm_price = CrmSalesPriceList::where('DelStatus',0)->where('Part_id',$prdid->crmProduct->id)->where('CustomerTypeId',$user['crm_customer_type'])->where('PriceTypeId',1)->whereDate('FromDate', '<=', date("Y-m-d"))->first();
+           
             if($crm_price)
             {
                 $price['actual_price'] = $crm_price->Amount;

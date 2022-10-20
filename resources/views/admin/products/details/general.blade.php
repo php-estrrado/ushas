@@ -161,6 +161,13 @@
             <span class="error"></span>
         </div>
     </div> 
+    <div class="col-lg-6 fl">
+        <div class="form-group">
+            {{Form::label('occasion_id','Occasion',['class'=>''])}} 
+            {{Form::select('prd[occasion_id]',$occasions,$occasion_id,['id'=>'occasion_ids','class'=>'form-control admin', 'placeholder'=>'Select Occasion'])}}
+            <span class="error"></span>
+        </div>
+    </div> 
      <div class="col-lg-12 fl">
         <div class="form-group">
             {{Form::label('rltd_prds','Related Products',['class'=>''])}} 

@@ -237,3 +237,5 @@ Route::post('/customer/home/daily-deals', [App\Http\Controllers\Api\Customer\Hom
 Route::post('/customer/home/trending', [App\Http\Controllers\Api\Customer\Homepage::class, 'home_trending_products']);
 Route::post('/customer/home/featured', [App\Http\Controllers\Api\Customer\Homepage::class, 'home_featured']);
 Route::post('/customer/home/explore', [App\Http\Controllers\Api\Customer\Homepage::class, 'home_explore']);
+Route::post('/customer/home/stores', [App\Http\Controllers\Api\Customer\Homepage::class, 'home_stores']);
+Route::post('/customer/home/occasion', [App\Http\Controllers\Api\Customer\Homepage::class, 'home_occasions']);

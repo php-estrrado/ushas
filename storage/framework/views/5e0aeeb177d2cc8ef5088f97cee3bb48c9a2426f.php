@@ -5,7 +5,8 @@
 if($product){ 
     $prices         =   $product->prdPrice;         $prdAssAttrs    =   $product->assignedAttrs($product->id); // echo '<pre>'; print_r($prices); echo '</pre>';
     $id             =   $product->id;               $sellerId       =   $product->seller_id;        $prdType        =       $product->product_type;
-    $catId          =   $product->category_id;      $subCatId       =   $product->sub_category_id;  $brandId        =       $product->brand_id; $tagId        =       $product->tag_id;
+    $catId          =   $product->category_id;      $subCatId       =   $product->sub_category_id;  $brandId        =       $product->brand_id;
+    $occasion_id        =       $product->occasion_id; $tagId        =       $product->tag_id;
     $commi          =   $product->commission;       $approved       =   $product->is_approved;      $apprDate       =       $product->approved_at;
     $status         =   $product->is_active;   if(isset($stocks)){ $stock_val = $stocks; }else{ $stock_val = ''; }  $min_order = $product->min_order; $bulk_order =  $product->bulk_order;   if(isset($product->tax)){  $taxId          =   $product->tax->id; }else{ $taxId          =0; }           if(isset($prices)) { $price          =       $prices->price; $sPrice         =   $prices->sale_price; $stDate         =       $prices->sale_start_date; $edDate         =   $prices->sale_end_date;   }else { $price          =      0; $sPrice         =   0; $stDate         =       ""; $edDate         =  "";  } 
     $adminPrd       =   $product->admin_prd_id; $commission       =   $product->commission;  $commi_type       =   $product->commi_type;            
@@ -20,7 +21,7 @@ if($product){
         $weight  =   $length  =   $width  =   $height  =  ''; } 
 }else{ 
     $weight  =   $length  =   $width  =   $height  =  ''; $commission = 0; $commi_type = '%'; $stock_val = $min_order = $bulk_order = 0;
-    $adminPrd = $id =   0; $commi = $prdType = $prdName = $catId = $subCatId = $tagId = $brandId = $sDesc = $desc = $content = $price = $sPrice = $taxId = $stDate = $edDate = $specification = ''; 
+    $adminPrd = $id =   0; $commi = $prdType = $prdName = $catId = $subCatId = $tagId = $brandId = $occasion_id = $sDesc = $desc = $content = $price = $sPrice = $taxId = $stDate = $edDate = $specification = ''; 
     $status         =   1;  $featured   = $daily_deals      = $out_of_stock_selling   = $is_comingsoon = 0; $sellerId = 0; $sellCkd = true; $adminCkd = false; $prdAssAttrs = []; $id = 0;
 }
 if($prdType == 2)   {   $conficLi = ''; }else{ $conficLi = 'no-disp'; } 

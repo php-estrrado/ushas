@@ -43,13 +43,13 @@ use App\Models\UserVisit;
 use App\Models\PrdImage;
 use App\Models\PrdShockingSaleProduct;
 use App\Models\Currency;
-
+use App\Models\Occasion;
 use Carbon\Carbon;
 use App\Rules\Name;
 use Validator;
 
 use App\Models\crm\{CrmAssortmentMaster, CrmChildProductsMaster, CrmCustomerType,CrmPartAssortmentDetails,
-CrmPartAssortmentMaster,CrmProduct,CrmSalesPriceList,CrmSalesPriceType,CrmSize};
+CrmPartAssortmentMaster,CrmProduct,CrmSalesPriceList,CrmSalesPriceType,CrmSize,CrmBranch};
 
 class Homepage extends Controller
 {
@@ -754,6 +754,107 @@ class Homepage extends Controller
            return ['httpcode'=>200,'status'=>'success','page'=>'Home','message'=>'Success','data'=>[
        
           'featured_products'=>$products,
+          
+            ]];
+
+    }
+
+    public function home_stores(Request $request){
+
+         $lang_id=$request->lang_id;
+        $login=0;
+        $user_id=null;
+        $user = [];
+        
+        $validator=  Validator::make($request->all(),[
+            'device_id' => ['required'],
+            'os_type'=> ['required','string','min:3','max:3'],
+            'page_url'=>['required']
+        ]);
+        if ($validator->fails()) 
+            {    
+              return ['httpcode'=>400,'status'=>'error','message'=>'invalid','data'=>['errors'=>$validator->messages()]];
+            }
+            
+        if($request->post('access_token')){
+            if(!$user = validateToken($request->post('access_token'))){ return invalidToken(); }
+            $login=1;
+            $user_id = $user['user_id'];
+            
+        }
+
+        $crm_branches=CrmBranch::where('DelStatus',0)->orderBy('Branch_Id','DESC')->take(3)->get();
+     
+        if(count($crm_branches)>0)
+        {
+        foreach($crm_branches as $key)
+        {  
+           $crm_branche_arr['id'] = $key->Branch_Id;
+           $crm_branche_arr['name'] = $key->Branch_Name;
+           $crm_branche_arr['city'] = $key->City;
+           $crm_branche_arr['image'] = url('storage/app/public/crm_stores/no-avatar.png');
+           $crm_stores_array[] = $crm_branche_arr;
+        }
+        }
+        else
+        {
+            $crm_stores_array=[];
+        }
+
+
+           return ['httpcode'=>200,'status'=>'success','page'=>'Home','message'=>'Success','data'=>[
+       
+           'stores'=>$crm_stores_array,
+          
+            ]];
+
+    }
+
+    public function home_occasions(Request $request){
+
+         $lang_id=$request->lang_id;
+        $login=0;
+        $user_id=null;
+        $user = [];
+        
+        $validator=  Validator::make($request->all(),[
+            'device_id' => ['required'],
+            'os_type'=> ['required','string','min:3','max:3'],
+            'page_url'=>['required']
+        ]);
+        if ($validator->fails()) 
+            {    
+              return ['httpcode'=>400,'status'=>'error','message'=>'invalid','data'=>['errors'=>$validator->messages()]];
+            }
+            
+        if($request->post('access_token')){
+            if(!$user = validateToken($request->post('access_token'))){ return invalidToken(); }
+            $login=1;
+            $user_id = $user['user_id'];
+            
+        }
+
+        $occasions=Occasion::where('is_active',1)->where('is_deleted',0)->orderBy('id','DESC')->take(4)->get();
+     
+        if(count($occasions)>0)
+        {
+        foreach($occasions as $key)
+        {  
+           $occ_arr['id'] = $key->id;
+           $occ_arr['name'] = $this->get_content($key->occasion_name_cid,$lang_id);
+           $occ_arr['image'] = url('public/uploads/storage/app/public/occasions/'.$key->image);
+           $occassions_list[] = $occ_arr;
+        }
+        }
+        else
+        {
+            $occassions_list=[];
+        }
+
+
+           return ['httpcode'=>200,'status'=>'success','page'=>'Home','message'=>'Success','data'=>[
+       
+           'stores'=>$occassions_list,
           
             ]];
 

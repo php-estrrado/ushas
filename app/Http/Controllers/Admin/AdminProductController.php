@@ -34,6 +34,7 @@ use App\Models\VariableProdHist;
 use App\Models\ProductVideo;
 use App\Models\ProdDimension;
 use App\Models\Tag;
+use App\Models\Occasion;
 use App\Models\AdminProductImage;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
@@ -122,6 +123,7 @@ class AdminProductController extends Controller{
         $data['sub_cats']           =   getDropdownData(Subcategory::where('is_deleted',0)->get(),'subcategory_id','subcategory_name');
         $data['brands']             =   getDropdownCmsData(Brand::where('is_active',1)->where('is_deleted',0)->get(),'id','brand_name_cid');
         $data['tags']             =   getDropdownCmsData(Tag::where('is_active',1)->where('is_deleted',0)->get(),'id','tag_name_cid');
+        $data['occasions']             =   getDropdownCmsData(Occasion::where('is_active',1)->where('is_deleted',0)->get(),'id','occasion_name_cid');
         $data['taxes']              =   getDropdownCmsData(Tax::where('is_active',1)->where('is_deleted',0)->get(),'id','tax_name_cid');
         $data['languages']          =   getDropdownData(Language::where('is_active',1)->where('is_deleted',0)->get(),'id','glo_lang_name');
         if($sellerId                >   0){ $data['seller'] = []; }
