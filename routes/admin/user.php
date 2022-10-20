@@ -287,6 +287,13 @@ Route::post('/admin/language/status', [App\Http\Controllers\Admin\LanguageContro
 Route::get('/admin/stores', [App\Http\Controllers\Admin\StoresController::class, 'stores'])->name('admin.stores');
 
 
+Route::get('/admin/occasions', [App\Http\Controllers\Admin\OccasionController::class, 'occasions'])->name('admin.occasions');
+Route::get('/admin/occasions/create', [App\Http\Controllers\Admin\OccasionController::class, 'createOccasion'])->name('occasions.create');
+Route::get('/admin/occasions/edit/{occasion}', [App\Http\Controllers\Admin\OccasionController::class, 'editOccasion'])->name('occasions.edit');
+Route::get('/admin/occasions/view/{occasion}', [App\Http\Controllers\Admin\OccasionController::class, 'viewOccasion'])->name('occasions.view');
+Route::post('/admin/occasions/save', [App\Http\Controllers\Admin\OccasionController::class, 'OccasionSave']);
+Route::post('/admin/occasions/delete', [App\Http\Controllers\Admin\OccasionController::class, 'OccasionDelete']);
+Route::post('/admin/occasions/status', [App\Http\Controllers\Admin\OccasionController::class, 'OccasionStatus']);
 
 
 
