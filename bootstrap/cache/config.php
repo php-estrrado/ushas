@@ -4,10 +4,10 @@
     'name' => 'Ushas',
     'env' => 'local',
     'debug' => true,
-    'url' => 'http://localhost/ushas-dev/',
-    'asset_url' => 'http://localhost/ushas-dev/public',
-    'upload_url' => 'http://localhost/ushas-dev/uploads/api',
-    'storage_url' => 'http://localhost/ushas-dev/uploads/storage',
+    'url' => 'https://qa-ushas.estrradoweb.com',
+    'asset_url' => 'https://qa-ushas.estrradoweb.com/public',
+    'upload_url' => 'https://qa-ushas.estrradoweb.com/uploads/api',
+    'storage_url' => 'https://qa-ushas.estrradoweb.com/uploads/storage',
     'timezone' => 'Asia/Kolkata',
     'locale' => 'en',
     'fallback_locale' => 'en',
@@ -212,7 +212,7 @@
       'file' => 
       array (
         'driver' => 'file',
-        'path' => 'C:\\wamp64\\www\\ushas-dev\\storage\\framework/cache/data',
+        'path' => '/home/qaushas/public_html/storage/framework/cache/data',
       ),
       'memcached' => 
       array (
@@ -299,7 +299,7 @@
       array (
         'driver' => 'sqlite',
         'url' => NULL,
-        'database' => 'ushas',
+        'database' => 'qaushas_qadb',
         'prefix' => '',
         'foreign_key_constraints' => true,
       ),
@@ -309,9 +309,9 @@
         'url' => NULL,
         'host' => 'localhost',
         'port' => '3306',
-        'database' => 'ushas',
-        'username' => 'root',
-        'password' => '',
+        'database' => 'qaushas_qadb',
+        'username' => 'qaushas_qadb',
+        'password' => 'Hello@ushas',
         'unix_socket' => '',
         'charset' => 'utf8mb4',
         'collation' => 'utf8mb4_unicode_ci',
@@ -329,9 +329,9 @@
         'url' => NULL,
         'host' => 'localhost',
         'port' => '3306',
-        'database' => 'ushas',
-        'username' => 'root',
-        'password' => '',
+        'database' => 'qaushas_qadb',
+        'username' => 'qaushas_qadb',
+        'password' => 'Hello@ushas',
         'charset' => 'utf8',
         'prefix' => '',
         'prefix_indexes' => true,
@@ -344,9 +344,9 @@
         'url' => NULL,
         'host' => 'localhost',
         'port' => '3306',
-        'database' => 'ushas',
-        'username' => 'root',
-        'password' => '',
+        'database' => 'qaushas_qadb',
+        'username' => 'qaushas_qadb',
+        'password' => 'Hello@ushas',
         'charset' => 'utf8',
         'prefix' => '',
         'prefix_indexes' => true,
@@ -387,13 +387,20 @@
       'local' => 
       array (
         'driver' => 'local',
-        'root' => 'C:\\wamp64\\www\\ushas-dev\\storage\\app',
+        'root' => '/home/qaushas/public_html/storage/app',
       ),
       'public' => 
       array (
         'driver' => 'local',
-        'root' => 'C:\\wamp64\\www\\ushas-dev\\storage\\app/public',
-        'url' => 'http://localhost/ushas-dev//storage',
+        'root' => '/home/qaushas/public_html/storage/app/public',
+        'url' => 'https://qa-ushas.estrradoweb.com/storage',
+        'visibility' => 'public',
+      ),
+      'product' => 
+      array (
+        'driver' => 'local',
+        'root' => '/home/qaushas/public_html/storage/app/public/products',
+        'url' => 'https://qa-ushas.estrradoweb.com/storage',
         'visibility' => 'public',
       ),
       's3' => 
@@ -410,7 +417,7 @@
     ),
     'links' => 
     array (
-      'C:\\wamp64\\www\\ushas-dev\\public\\storage' => 'C:\\wamp64\\www\\ushas-dev\\storage\\app/public',
+      '/home/qaushas/public_html/public/storage' => '/home/qaushas/public_html/storage/app/public',
     ),
   ),
   'hashing' => 
@@ -444,13 +451,13 @@
       'single' => 
       array (
         'driver' => 'single',
-        'path' => 'C:\\wamp64\\www\\ushas-dev\\storage\\logs/laravel.log',
+        'path' => '/home/qaushas/public_html/storage/logs/laravel.log',
         'level' => 'debug',
       ),
       'daily' => 
       array (
         'driver' => 'daily',
-        'path' => 'C:\\wamp64\\www\\ushas-dev\\storage\\logs/laravel.log',
+        'path' => '/home/qaushas/public_html/storage/logs/laravel.log',
         'level' => 'debug',
         'days' => 14,
       ),
@@ -501,7 +508,7 @@
       ),
       'emergency' => 
       array (
-        'path' => 'C:\\wamp64\\www\\ushas-dev\\storage\\logs/laravel.log',
+        'path' => '/home/qaushas/public_html/storage/logs/laravel.log',
       ),
     ),
   ),
@@ -563,7 +570,7 @@
       'theme' => 'default',
       'paths' => 
       array (
-        0 => 'C:\\wamp64\\www\\ushas-dev\\resources\\views/vendor/mail',
+        0 => '/home/qaushas/public_html/resources/views/vendor/mail',
       ),
     ),
     'stream' => 
@@ -691,7 +698,7 @@
     'lifetime' => '30',
     'expire_on_close' => false,
     'encrypt' => false,
-    'files' => 'C:\\wamp64\\www\\ushas-dev\\storage\\framework/sessions',
+    'files' => '/home/qaushas/public_html/storage/framework/sessions',
     'connection' => NULL,
     'table' => 'sessions',
     'store' => NULL,
@@ -729,7 +736,7 @@
       'secret' => NULL,
       'endpoint' => 'api.mailgun.net',
     ),
-    'base_url' => 'http://localhost/ushas',
+    'base_url' => 'https://qa-ushas.estrradoweb.com',
     'm_lang' => 'yes',
     'm_currency' => 'yes',
     'prod_type' => 'from_api',
@@ -776,9 +783,9 @@
   array (
     'paths' => 
     array (
-      0 => 'C:\\wamp64\\www\\ushas-dev\\resources\\views',
+      0 => '/home/qaushas/public_html/resources/views',
     ),
-    'compiled' => 'C:\\wamp64\\www\\ushas-dev\\storage\\framework\\views',
+    'compiled' => '/home/qaushas/public_html/storage/framework/views',
   ),
   'dompdf' => 
   array (
@@ -786,10 +793,10 @@
     'orientation' => 'portrait',
     'defines' => 
     array (
-      'font_dir' => 'C:\\wamp64\\www\\ushas-dev\\storage\\fonts/',
-      'font_cache' => 'C:\\wamp64\\www\\ushas-dev\\storage\\fonts/',
-      'temp_dir' => 'C:\\Users\\user\\AppData\\Local\\Temp',
-      'chroot' => 'C:\\wamp64\\www\\ushas-dev',
+      'font_dir' => '/home/qaushas/public_html/storage/fonts/',
+      'font_cache' => '/home/qaushas/public_html/storage/fonts/',
+      'temp_dir' => '/tmp',
+      'chroot' => '/home/qaushas/public_html',
       'enable_font_subsetting' => false,
       'pdf_backend' => 'CPDF',
       'default_media_type' => 'screen',
@@ -799,7 +806,7 @@
       'enable_php' => false,
       'enable_javascript' => true,
       'enable_remote' => true,
-      'font_height_ratio' => 1.1,
+      'font_height_ratio' => 1.100000000000000088817841970012523233890533447265625,
       'enable_html5_parser' => false,
     ),
   ),

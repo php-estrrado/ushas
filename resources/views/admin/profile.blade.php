@@ -5,7 +5,7 @@
         $user = auth()->user();
         $c_code =  getDropdownData(DB::table('countries')->where('is_deleted',0)->get(),'id','phonecode');
         if($user->avatar == NULL){ $avatar = url('storage/app/public/no-avatar.png'); }
-        else{ $avatar = url('storage'.$user->avatar); }
+        else{ $avatar = config('app.url').'/storage'.auth()->user()->avatar; }
     @endphp
 <!--Page header-->
 <div class="page-header">

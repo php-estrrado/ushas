@@ -10,7 +10,7 @@ use App\Models\SalesOrderAddress;
 class CrmSalesPriceType extends Model
 {
     use HasFactory;
-    protected $table = 'crm_SalesPriceType';
+    protected $table = 'crm_salespricetype';
     protected $guarded=[];
     
     

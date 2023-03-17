@@ -7,6 +7,6 @@ use Illuminate\Database\Eloquent\Model;
 
 class PrdImage extends Model{
     use HasFactory;
-    protected $fillable = ['prd_id','image','thumb','created_by','is_active'];
+    protected $fillable = ['prd_id','image','thumb','created_by','is_active','is_deleted','ProductID','FileName','ProductPhoto','ProductPhotoFileType','ProductPhotoFileSize'];
     
 }

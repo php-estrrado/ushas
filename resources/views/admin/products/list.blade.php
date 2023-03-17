@@ -43,6 +43,8 @@
 <script src="{{URL::asset('admin/assets/plugins/combotree/comboTreePlugin.js')}}"></script>
  <script src="{{URL::asset('admin/assets/plugins/quill/quill.min.js')}}"></script>
   <script src="{{URL::asset('admin/assets/js/chosen.jquery.min.js')}}"></script>
+     <script src="https://cdnjs.cloudflare.com/ajax/libs/croppie/2.4.0/croppie.js"></script>
+     
     <script>
 
     $.ajaxSetup({

@@ -96,7 +96,7 @@
                 <div class="col-md-6 mb-3">
                 	<label class="form-label view" for="avatar">Avatar</label>
                 	@if($admin->avatar !="" ) 
-                	<img id="avatar_img" src="{{ url('storage'.$admin->avatar) }}" alt="avatar" style="height: 120px;" />
+                	<img id="avatar_img" src="{{ config('app.url').'/storage'.auth()->user()->avatar }}" alt="avatar" style="height: 120px;" />
                 	@else
                     <img id="avatar_img" src="{{url('storage/app/public/no-avatar.png')}}" alt="avatar" style="height: 120px;" />
                      @endif

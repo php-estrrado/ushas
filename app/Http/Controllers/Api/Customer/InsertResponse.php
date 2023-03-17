@@ -44,6 +44,9 @@ use App\Rules\Name;
 use Validator;
 use Illuminate\Support\Facades\Hash;
 use Intervention\Image\Facades\Image;
+use App\Models\crm\{CrmAssortmentMaster, CrmChildProductsMaster, CrmCustomerType,CrmPartAssortmentDetails,
+CrmPartAssortmentMaster,CrmProduct,CrmSalesPriceList,CrmSalesPriceType,CrmSize,CrmBranch,CrmCompany};
+
 class InsertResponse extends Controller
 {
     public function insert_seller_review(Request $request)
@@ -242,67 +245,151 @@ class InsertResponse extends Controller
     else
     {
         $product_in =Product::where('id',$input['product_id'])->where('is_active',1)->where('is_deleted',0)->first();
-       
-        //dd($product_in);
-		if($product_in){
-		    if($product_in->out_of_stock_selling==0){
-		     $stock=Product::prdStock($input['product_id']);
-		     if($stock <= 0){
-		        return ['httpcode'=>400,'status'=>'error','message'=>"Out of stock"];    
-		        die;
-		     }
-		    }
-			if($product_in->bulk_order!=0){
-			  if($input['quantity'] % $product_in->bulk_order != 0){
-				return ['httpcode'=>400,'status'=>'error','message'=>"bulk order quantity is ".$product_in->bulk_order." or Multiple of ".$product_in->bulk_order];
-                die;
-			  }
-			}
-		    if($product_in->min_order!=0){
-			  if($input['quantity'] < $product_in->min_order){
-				return ['httpcode'=>400,'status'=>'error','message'=>"Minimum quantity of the order is ".$product_in->min_order];
-                die;
-			  }
-			}
-			
-			
-            if($request->prd_assign_id){
-            foreach(explode(',',$input['prd_assign_id']) as $assgn)
-            {
-             $valid_assgn_prd= AssignedFields::where('id',$assgn)->where('prd_id',$input['product_id'])->first();
-             if($valid_assgn_prd===null)
-             {
-                return ['httpcode'=>400,'status'=>'error','message'=>"Invalid product assigned id"];
-                die;
-             }
-             } 
-            
-			
-			}
+        $crm_product_id = $product_in->crmProduct->id;
+        // dd($crm_product_id->id);
+		if(($product_in) && ($crm_product_id)){
 
-        $in_cart = Cart::join('usr_cart_item','usr_cart.id','=','usr_cart_item.cart_id')
+            $custom_order = $input['custom'];
+            if($custom_order >0)
+            {
+                $sizes = $input['children'];
+                if(isset($sizes) && count($sizes)>0)
+                {
+                    foreach($sizes as $sk=>$sv)
+                    {
+                        
+                        if($product_in->out_of_stock_selling==0){
+                            $stock=CrmChildProductsMaster::ChildPrdStock($sv['child_product_id'],$input['product_id']);
+                            if($stock <= 0){
+                            return ['httpcode'=>400,'status'=>'error','message'=>"Out of stock",'data'=>['child_product_id'=>$sv['child_product_id']]];    
+                            die;
+                            }
+                        }
+                    }
+
+                }else{
+                    return ['httpcode'=>400,'status'=>'error','message'=>"Please select size."];    
+                    die;
+                }
+
+            }
+            // dd($custom_order);
+		    
+        if($custom_order >0)
+            {
+                $sizes = $input['children'];
+                if(isset($sizes) && count($sizes)>0)
+                {   
+                    $cart_init = 0;
+                    foreach($sizes as $sk=>$sv)
+                    {
+                     
+                      $cart_init = $this->cart_modify($input['product_id'],$sv['child_product_id'],$sv['child_quantity'],$user_id,$input,$cart_init,$crm_product_id,1);  
+
+                    }
+
+                    return ['httpcode'=>200,'status'=>'success','message'=>"Added to cart"];
+
+                }else{
+                    return ['httpcode'=>400,'status'=>'error','message'=>"Please select size."];    
+                    die;
+                }
+
+            }else
+            {
+                $assortment_id = $input['assortment_id'];
+                $assortment_qty = $input['quantity'];
+
+                $prd_assort = CrmPartAssortmentMaster::where('productID',$crm_product_id)->where('AssortmentID',$assortment_id)->where('is_deleted',0)->get();
+
+                 if(count($prd_assort)>0)
+                            {
+                            foreach($prd_assort as $rows)
+                            {
+                                
+                                if($rows->Assortments)
+                                {
+                                    $assortment = $rows->Assortments;
+                                    if($rows->AssortmentsDetail)
+                                    {
+                                        $cart_init = 0;
+                                        foreach($rows->AssortmentsDetail as $child_prod_k=>$child_val)
+                                        {
+                                            
+                                           //$child_qty = $child_val->ChildQuantity*$assortment_qty; 
+                                           $child_qty = $child_val->ChildQuantity; 
+                                            $cart_init = $this->cart_modify($input['product_id'],$child_val->ChildProductID,$child_qty,$user_id,$input,$cart_init,$crm_product_id,0);  
+
+                                        }
+                                  
+                                        return ['httpcode'=>200,'status'=>'success','message'=>"Added to cart"];
+                                    }
+                                    
+                                }
+
+                            }
+                     }else
+        {
+            return ['httpcode'=>404,'status'=>'error','message'=>"Product unavailable"];
+        }
+
+
+            }
+
+        }
+        else
+        {
+            return ['httpcode'=>404,'status'=>'error','message'=>"Product unavailable"];
+        }
+       
+      }
+    }
+
+
+    public function cart_modify($product_id,$child_product_id,$child_quantity,$user_id,$input,$cart_init=0,$crm_product_id,$custom=0)
+    {
+
+        $custom_order = $input['custom'];
+        if($custom_order >0)
+        {
+          $assortment_id = 0;     
+        }else
+        {
+         $assortment_id = $input['assortment_id'];    
+        }
+
+         $in_cart = Cart::join('usr_cart_item','usr_cart.id','=','usr_cart_item.cart_id')
         ->where('usr_cart_item.is_active',1)->where('usr_cart_item.is_deleted',0)
         ->where('usr_cart.is_active',1)->where('usr_cart.is_deleted',0)
-        //->where('usr_cart_item.prd_assign_id',$input['prd_assign_id'])
-        ->where('usr_cart_item.product_id',$input['product_id'])
+        ->where('usr_cart_item.product_id',$product_id)
+        ->where('usr_cart_item.prd_assign_id',$child_product_id)
+        ->where('usr_cart_item.assortment_id',$assortment_id)
         ->where('usr_cart.user_id',$user_id)
         ->first();
-       // dd($in_cart);
+    
+
+           
         if($in_cart)
-        {
-            $quantity_update = $in_cart->quantity + $input['quantity'];
+        {   
+            $quantity_update = 0;
+            //$quantity_update = $in_cart->quantity + $child_quantity;
+           if($custom ==1){  $quantity_update = $in_cart->quantity + $child_quantity; }else{ $quantity_update = $in_cart->quantity ; }
+            if($assortment_id>0){ $assort_qty =$in_cart->assortment_qty + $input['quantity'];  }else{ $assort_qty =0; }
             Cart::where('id',$in_cart->cart_id)->update([
             'updated_at'=>date("Y-m-d H:i:s")]);
 
-            CartItem::where('cart_id',$in_cart->cart_id)->update([
+            CartItem::where('cart_id',$in_cart->cart_id)->where('prd_assign_id',$child_product_id)->where('assortment_id',$assortment_id)->update([
             'quantity'=>$quantity_update,   
+            'assortment_qty'  => $assort_qty,
             'updated_at'=>date("Y-m-d H:i:s")]);
 
             $insert_cart_hist =  CartHistory::create(['org_id' => 1,
                 'user_id' => $user_id,
-                'product_id' => $input['product_id'],
-                'quantity'  => $input['quantity'],
-                'prd_assign_id'=>$input['prd_assign_id'],
+                'product_id' => $product_id,
+                'quantity'  => $child_quantity,
+                'prd_assign_id'=>$child_product_id,
+                'assortment_id'=>$assortment_id,
+                'crm_product_id'=>$crm_product_id,
                 'action'=>'insert',
                 'is_active'=>1,
                 'is_deleted'=>0,
@@ -313,23 +400,35 @@ class InsertResponse extends Controller
         }
         else
         {
-        $insert_cart =  Cart::create(['org_id' => 1,
+
+            if($cart_init>0)
+            {
+                $cart_id = $cart_init;
+            }else{
+                $insert_cart =  Cart::create(['org_id' => 1,
                 'user_id' => $user_id,
                 'cart_name' => $input['cart_type'],
                 'cart_desc'  => $input['cart_type'],
+                'assortment_id'=>$assortment_id,
                 'is_active'=>1,
                 'is_deleted'=>0,
                 'created_by'=>$user_id,
                 'updated_by'=>$user_id,
                 'created_at'=>date("Y-m-d H:i:s"),
                 'updated_at'=>date("Y-m-d H:i:s")]);
-        $cart_id = $insert_cart->id;
+                $cart_id = $insert_cart->id;  
+            }
+
+            if($assortment_id>0){ $assort_qty =$input['quantity'];  }else{ $assort_qty =0; }
 
         $insert_cart_item =  CartItem::create(['org_id' => 1,
                 'cart_id' => $cart_id,
-                'product_id' => $input['product_id'],
-                //'prd_assign_id'=>$input['prd_assign_id'],
-                'quantity'  => $input['quantity'],
+                'product_id' => $product_id,
+                'prd_assign_id'=>$child_product_id,
+                'quantity'  => $child_quantity,
+                'assortment_qty'  => $assort_qty,
+                'assortment_id'=>$assortment_id,
+                'crm_product_id'=>$crm_product_id,
                 'is_active'=>1,
                 'is_deleted'=>0,
                 'created_by'=>$user_id,
@@ -339,9 +438,11 @@ class InsertResponse extends Controller
 
         $insert_cart_hist =  CartHistory::create(['org_id' => 1,
                 'user_id' => $user_id,
-                'product_id' => $input['product_id'],
-                'quantity'  => $input['quantity'],
-                //'prd_assign_id'=>$input['prd_assign_id'],
+                'product_id' => $product_id,
+                'quantity'  => $child_quantity,
+                'prd_assign_id'=>$child_product_id,
+                'assortment_id'=>$assortment_id,
+                'crm_product_id'=>$crm_product_id,
                 'action'=>'insert',
                 'is_active'=>1,
                 'is_deleted'=>0,
@@ -350,17 +451,9 @@ class InsertResponse extends Controller
                 'created_at'=>date("Y-m-d H:i:s"),
                 'updated_at'=>date("Y-m-d H:i:s")]);
 
+                return $cart_id;
+
             }
-        return ['httpcode'=>200,'status'=>'success','message'=>"Successfully inserted"];
-        
-       
-        }
-        else
-        {
-            return ['httpcode'=>404,'status'=>'error','message'=>"Product unavailable"];
-        }
-       
-      }
     }
     
     public function change_cart_qty(Request $request)
@@ -370,7 +463,10 @@ class InsertResponse extends Controller
         
         $validator=  Validator::make($request->all(),[
             'cart_id' => ['required','numeric'],
-            'quantity'=> ['required','numeric'],
+            'custom'=> ['required','numeric'],
+            'assortment_id' => ['required_if:custom,=,0'],
+            'quantity'=> ['required_if:assortment_id,!=,""','numeric'],
+            'children' => ['required_if:custom,=,1'],
             'cart_type'=>['required','string','max:5']
         ]);
         $input = $request->all();
@@ -382,6 +478,8 @@ class InsertResponse extends Controller
 
     else
     {
+        
+        
         $in_cart = Cart::join('usr_cart_item','usr_cart.id','=','usr_cart_item.cart_id')
         ->where('usr_cart_item.is_active',1)->where('usr_cart_item.is_deleted',0)
         ->where('usr_cart.is_active',1)->where('usr_cart.is_deleted',0)
@@ -391,30 +489,26 @@ class InsertResponse extends Controller
         //dd($in_cart);
         if($in_cart)
         {
-		$product_in =Product::where('id',$in_cart->product_id)->where('is_active',1)->where('is_deleted',0)->first();
-		if($product_in){
-			if($product_in->bulk_order!=0){
-			  if($input['quantity'] % $product_in->bulk_order != 0){
-				return ['httpcode'=>400,'status'=>'error','message'=>"bulk order quantity is ".$product_in->bulk_order." or Multiple of ".$product_in->bulk_order];
-                die;
-			  }
-			}
-		    if($product_in->min_order!=0){
-			  if($input['quantity'] < $product_in->min_order){
-				return ['httpcode'=>400,'status'=>'error','message'=>"Minimum quantity of the order is ".$product_in->min_order];
-                die;
-			  }
-			}
-		}
-            $quantity_update = $input['quantity'];
-            Cart::where('id',$in_cart->cart_id)->update([
-            'updated_at'=>date("Y-m-d H:i:s")]);
-
-            CartItem::where('cart_id',$in_cart->cart_id)->update([
-            'quantity'=>$quantity_update,    
-            'updated_at'=>date("Y-m-d H:i:s")]);
-
-            $insert_cart_hist =  CartHistory::create(['org_id' => 1,
+            
+            if($input['custom'] == 1){
+                
+                Cart::where('id',$in_cart->cart_id)->update([
+                'updated_at'=>date("Y-m-d H:i:s")]);
+               
+                $children = $input['children'];
+                if($children)
+                {
+                    foreach($children as $ck=>$cv)
+                    {
+                        
+                        CartItem::where('cart_id',$in_cart->cart_id)->where('prd_assign_id',$cv['child_product_id'])->update([
+                        'quantity'=>$cv['child_quantity'],    
+                        'updated_at'=>date("Y-m-d H:i:s")]);
+                        
+                    }
+                }
+                
+                 $insert_cart_hist =  CartHistory::create(['org_id' => 1,
                 'user_id' => $user_id,
                 'product_id' => $in_cart->product_id,
                 'quantity'  => $input['quantity'],
@@ -425,7 +519,34 @@ class InsertResponse extends Controller
                 'created_by'=>$user_id,
                 'updated_by'=>$user_id,
                 'created_at'=>date("Y-m-d H:i:s"),
+                'updated_at'=>date("Y-m-d H:i:s")]); 
+                 
+            }else{
+                    
+                $quantity_update = $input['quantity'];
+                Cart::where('id',$in_cart->cart_id)->update([
                 'updated_at'=>date("Y-m-d H:i:s")]);
+                
+                CartItem::where('cart_id',$in_cart->cart_id)->update([
+                'assortment_qty'=>$quantity_update,    
+                'updated_at'=>date("Y-m-d H:i:s")]);
+                
+                $insert_cart_hist =  CartHistory::create(['org_id' => 1,
+                'user_id' => $user_id,
+                'product_id' => $in_cart->product_id,
+                'quantity'  => $input['quantity'],
+                'action'=>'insert',
+                //'prd_assign_id'=>$in_cart->product_idprd_assign_id,
+                'is_active'=>1,
+                'is_deleted'=>0,
+                'created_by'=>$user_id,
+                'updated_by'=>$user_id,
+                'created_at'=>date("Y-m-d H:i:s"),
+                'updated_at'=>date("Y-m-d H:i:s")]);       
+                
+            }
+		
+
         }
         else
         {

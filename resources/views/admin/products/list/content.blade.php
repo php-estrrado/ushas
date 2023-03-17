@@ -6,12 +6,12 @@
             <li class="breadcrumb-item active" aria-current="page"><a href="#">{{$title}}</a></li>
         </ol>
     </div>
-    <div class="page-rightheader" style="display:flex; flex-direction: row; justify-content: center; align-items: center">
+    <!-- <div class="page-rightheader" style="display:flex; flex-direction: row; justify-content: center; align-items: center">
         <div class="btn btn-list">
             <a id="addNew"   class="btn btn-primary addmodule" data-toggle="modal" data-target=".bd-example-modal-sm"><i class="fe fe-plus mr-1"></i> Add New</a>
             <a id="importproduct"   class="btn btn-success importproduct" data-toggle="modal" data-target=".importproduct_modal"><i class="fe fe-download mr-1"></i> Import</a>
         </div>
-    </div>
+    </div> -->
 </div>
 <div id="filters" class="">
     <div class="row" id="filterrow"><div class="plus-minus-toggle collapsed"><p>Filters</p></div></div>
@@ -67,8 +67,8 @@
                                                     <td><span class="d-none">{{$n}}</span></td>
                                                     <td><a style="cursor: pointer;" class="pointer viewBtn" id="viewBtn-{{$row->id}}">{{ getContent($row->name_cnt_id,$langId); }}</a></td>
                                                 
-                                                    <td>{{$row->category->cat_name}}</td>
-                                                    <td>{{$row->subCategory->subcategory_name}}</td>
+                                                    <td>@if($row->category){{$row->category->cat_name}} @endif</td>
+                                                    <td>@if($row->subCategory){{$row->subCategory->subcategory_name}}@endif</td>
                                                     <td>{{$row->prdType->type_name}}</td>
                                                     <td>@if($row->prdPrice){{$row->prdPrice->price}} @endif</td>
                                                     <td>{{date('d M Y',strtotime($row->created_at))}}</td>

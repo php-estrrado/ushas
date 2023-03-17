@@ -114,11 +114,13 @@ class SettingsOthersController extends Controller
    $validator= $request->validate([
          'refund_deduction'   =>  ['required'],
          'return_period' => ['required'],
+         'point_equivalent' => ['required'],
 
         ], [], 
         [
          'refund_deduction' => 'Refund Deduction',
          'return_period' => 'Return Time Period',
+         'point_equivalent' => 'Points Equivalent',
         ]);
 
        
@@ -138,6 +140,7 @@ class SettingsOthersController extends Controller
         'value' => 0,
           'refund_deduction' =>$input['refund_deduction'],
         'return_period' =>$input['return_period'],
+        'point_equivalent' =>$input['point_equivalent'],
         'bid_charge' => 0,
         'mjs_fee' => 0,
         'pg_fee' => 0,

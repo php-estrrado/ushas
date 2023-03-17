@@ -13,10 +13,21 @@ class Product extends Model{
     protected $table = 'prd_products';
     protected $fillable = [
         'seller_id','product_type','category_id','sub_category_id','brand_id','tax_id','tag_id','name','name_cnt_id ','short_desc_cnt_id','desc_cnt_id','content_cnt_id','spec_cnt_id','is_featured','daily_deals','min_order','bulk_order',
-        'is_out_of_stock','out_of_stock_selling','min_stock_alert','commission','commi_type','is_approved','visible','admin_prd_id','is_active','created_by','platform','odoo_id','sku','is_comingsoon','occasion_id'
+        'is_out_of_stock','out_of_stock_selling','min_stock_alert','commission','commi_type','is_approved','visible','admin_prd_id','is_active','created_by','platform','odoo_id','sku','is_comingsoon','occasion_id','points'
     ];
 
     public function crmProduct(){ return $this->hasOne(CrmProduct ::class, 'prd_id'); }   
+    public function crmStore($id){  $str_list = [];
+    $stores =  \App\Models\crm\CrmProductBranches::where('prd_id',$id)->get();
+    if($stores)
+    {
+        foreach($stores as $k=>$v)
+        {
+            $str_list[] = $v->BranchName;
+        }
+    }
+    return $str_list;
+    } 
     public function prdType(){ return $this->belongsTo(ProductType ::class, 'product_type'); }
     public function category(){ return $this->belongsTo(Category ::class, 'category_id'); }
     public function seller(){ return $this->belongsTo(SellerInfo ::class, 'seller_id'); }
@@ -193,7 +204,12 @@ class Product extends Model{
     
     static function getTaxValue($tax_id){ 
         $current_date=Carbon::now();
-        $TaxValue =TaxValue::where(function ($query) { $query->where('is_deleted', '=', NULL)->orWhere('is_deleted', '=', 0);})->where('tax_id', $tax_id)->whereDate('valid_from','<=',$current_date)->whereDate('valid_to','>=',$current_date)->first();
+//        $TaxValue =TaxValue::where(function ($query) { $query->where('is_deleted', '=', NULL)->orWhere('is_deleted', '=', 0);})->where('tax_id', $tax_id)->whereDate('valid_from','<=',$current_date)->whereDate('valid_to','>=',$current_date)->first();
+  
+          $TaxValue =TaxValue::where(function ($query) { $query->where('is_deleted', '=', NULL)->orWhere('is_deleted', '=', 0);})->where('tax_id', $tax_id)->first();
+
+     
+        
         if($TaxValue){ 
         $return_cont = $TaxValue->percentage;
         return $return_cont;

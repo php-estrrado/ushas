@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class PrdPrice extends Model{
     use HasFactory;
-    protected $fillable = ['prd_id','price','odoo_id','platform','sale_price','sale_start_date','sale_end_date','created_by'];
+    protected $table = 'prd_prices';
+    protected $fillable = ['prd_id','price','unique_id','platform','sale_price','sale_start_date','sale_end_date','created_by'];
     
 }

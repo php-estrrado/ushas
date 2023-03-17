@@ -62,29 +62,37 @@
 				<h3 class="expanel-title">Refund Deduction Options</h3>
 			</div>
 				
-<div class="row">
-<div class="col-lg-6">
-<div class="expanel-body">
-<div  class="referral-points" >
-<label class="form-label" for="refund_deduction" >Refund Deduction (%) <span class="text-red">*</span></label>
-<input min="1" step="1" type="number" name="refund_deduction" id="refund_deduction" @if(isset($settings['refund_deduction'])) value="{{ $settings['refund_deduction'] }}" @endif placeholder="Refund Deduction(%)" class="form-control"  />
-</div>
+			<div class="row">
+				<div class="col-lg-6">
+					<div class="expanel-body">
+						<div  class="referral-points" >
+							<label class="form-label" for="refund_deduction" >Refund Deduction (%) <span class="text-red">*</span></label>
+							<input min="1" step="1" type="number" name="refund_deduction" id="refund_deduction" @if(isset($settings['refund_deduction'])) value="{{ $settings['refund_deduction'] }}" @endif placeholder="Refund Deduction(%)" class="form-control"  />
+						</div>
+					</div>
+				</div>
 
-</div>
-</div>
+				<div class="col-lg-6">
+					<div class="expanel-body">
+						<div  class="referral-points" >
+							<label class="form-label" for="return_period" >Return Time Period (in hours) <span class="text-red">*</span></label>
+							<input min="1" step="1" type="number" name="return_period" id="return_period" @if(isset($settings['return_period'])) value="{{ $settings['return_period'] }}" @endif placeholder="Return Time Period(After Delivery)" class="form-control"  />
+						</div>
+					</div>
+				</div>
+			</div>
 
-<div class="col-lg-6">
-<div class="expanel-body">
-<div  class="referral-points" >
-<label class="form-label" for="return_period" >Return Time Period (in hours) <span class="text-red">*</span></label>
-<input min="1" step="1" type="number" name="return_period" id="return_period" @if(isset($settings['return_period'])) value="{{ $settings['return_period'] }}" @endif placeholder="Return Time Period(After Delivery)" class="form-control"  />
-</div>
-
-</div>
-</div>
-</div>
-
-	</div>
+			<div class="row">
+				<div class="col-lg-6">
+					<div class="expanel-body">
+						<div  class="referral-points" >
+							<label class="form-label" for="point_equivalent" >Points Equivalent (1 point equals to rupees ₹) <span class="text-red">*</span></label>
+							<input min="1" step="1" type="number" name="point_equivalent" id="point_equivalent" @if(isset($settings['point_equivalent'])) value="{{ $settings['point_equivalent'] }}" @endif placeholder="Points Equivalent(₹)" class="form-control"  />
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
 
 
 														<div class="row">

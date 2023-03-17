@@ -45,9 +45,15 @@ use App\Models\AssignedAttribute;
 use App\Models\Wishlist;
 use App\Models\WishlistItem;
 use App\Models\LoyaltyPoints;
+use App\Models\CustomerPoints;
+use App\Models\CustomerMaster;
+use App\Models\Delivery;
+use App\Models\SettingOther;
 use Carbon\Carbon;
 use App\Rules\Name;
 use Validator;
+use App\Models\crm\{CrmAssortmentMaster, CrmChildProductsMaster, CrmCustomerType,CrmPartAssortmentDetails,
+CrmPartAssortmentMaster,CrmProduct,CrmSalesPriceList,CrmSalesPriceType,CrmSize,CrmBranch,CrmCompany};
 
 class CartController extends Controller
 {
@@ -87,34 +93,48 @@ class CartController extends Controller
                         ->where('usr_cart_item.is_active',1)
                         ->where('usr_cart_item.is_deleted',0)
                         ->where('prd_products.is_deleted',0)
+                        ->groupBy('prd_products.seller_id')
                         ->get();
-        	//dd($cart);
+        // 	dd($cart);
         if(count($cart)>0)
         {
-            $cart_count = count($cart);
+            
             $wallet = $this->wallet_balance($user_id);
+
             $before_checkout_products=[];
+    
+
+        $payment_gateway_chrg=0;
+            $shipping_chrg =0;
             //Seller cart products
-            $cart_bySeller = Cart::join('usr_cart_item','usr_cart.id','=','usr_cart_item.cart_id')
-                        ->where('usr_cart.user_id',$user_id)    
-                        ->where('usr_cart.is_active',1)
-                        ->where('usr_cart.is_deleted',0)
-                        ->where('usr_cart_item.is_active',1)
-                        ->where('usr_cart_item.is_deleted',0)
-                        ->pluck('product_id');
-            //$seller_products = Product::whereIn('id',$cart_bySeller)->where('is_active',1)->where('is_deleted',0)->groupBy('seller_id')->get();
-            //$seller_product_list=[];
+     
+            // dd($cart);
+            //return $seller_products;die;
+            $seller_product_list=[];
             $products=[];
             $rewards=[];
-            
-            
-            foreach($cart as $rows)
+            $seller_products = $cart;
+            foreach($seller_products as $s_row)
             {
-                $products[] = $this->get_cart_products($rows->product_id,$rows->cart_id,$rows->quantity,$lang);
-				
-			}   
-		
-            $filter = array_filter($products);
+                // dd($s_row);
+                $products_seller_shipping = 0;
+                $store_active = CrmBranch::where('DelStatus',0)->where('Branch_Id',$s_row->seller_id)->first(); //dd($s_row);
+                    if($store_active)
+                    {
+                $products_seller['seller']                = array('seller_id'=>$s_row->seller_id,'seller'=>$store_active->Branch_Name);
+
+                $products_seller['seller']['products']    = $this->get_cart_seller_products($s_row->seller_id,$user_id,$lang,$crv);
+
+                $seller_product_list[]                    = $products_seller;
+                
+                    }
+            }
+
+            $products=[];
+            $rewards=[];
+             
+            //   dd($seller_product_list);
+           // if($user_id ==126){ dd($seller_product_list); }
             $tot_tax =0;
             $total_cost=0;
 			$total_actual_cost=0;
@@ -122,62 +142,67 @@ class CartController extends Controller
             $grand_tot=0;
             $before_checkout_product=[];
             $related=[];
-            if(count($filter)>0)
+            $c_count = 0;
+            if(isset($seller_product_list))
             {
-                foreach($filter as $value)
+                foreach($seller_product_list as $sk=>$sv)
                 {
-                   
-                    $tot_tax += $value['total_tax_value'];
-                    $total_actual_cost +=(float)$value['total_actual_price'];  
-					$related_products=[];					
-                    $total_discount_cost +=(float)$value['unit_discount_price']*$value['quantity'];    
-                    if($value['type'] == 2){
-					$prd_ass = AssociatProduct::where('ass_prd_id',$value['product_id'])->where('is_deleted',0)->first();
-					//dd($prd_ass);
-					if($prd_ass){
-					$prdid=$prd_ass->prd_id;
-					}else{
-					$prdid=0;
-					}
-					$prd_rel=RelatedProduct::where('prd_id',$prdid)->where('is_deleted',0)->get();
-					}
-					else{
-					    
-					$prd_rel=RelatedProduct::where('prd_id',$value['product_id'])->where('is_deleted',0)->get();
-                    }
-                    
-				
-					if(count($prd_rel)>0)
-                    {
+                  if(isset($sv['seller']['products'])){ $seller_prd = $sv['seller']['products']; }else{ $seller_prd = []; } 
+                  if(count($seller_prd)>0)
+                  {
+                    foreach($seller_prd as $spk=>$spv)
+                    {   
+                        $c_count++;
+                        $tot_tax += $spv['total_tax_value'];
+                        $total_actual_cost +=(float)$spv['total_actual_price'];  
+                        $related_products=[];                   
+                        $total_discount_cost +=(float)$spv['unit_discount_price']*$spv['quantity']; 
+                        $prd_rel=RelatedProduct::where('prd_id',$spv['product_id'])->where('is_deleted',0)->get();
+
+                        if(count($prd_rel)>0)
+                        {
                         foreach($prd_rel as $key)
                         {
-                        //$related['products']=$this->related_product($key->rel_prd_id);
-                       $related[] = $this->related_product($key->rel_prd_id,$lang,$login);
-						if (count($before_checkout_products) === 10) {
-							break;
-						}
+                        $related[] = $this->related_product($key->rel_prd_id,$lang,$user);
+                        if (count($before_checkout_products) === 10) {
+                        break;
                         }
-                        // $order = array_column($related_products, 'rating');
-                        // array_multisort($order, SORT_DESC, $related_products);
+                        }
+
+                        }
+
+                        $before_checkout_product= $related;
 
                     }
-                   
-				$before_checkout_product= $related;
-				}
-			
-				
-				$total_cost=$total_actual_cost-$total_discount_cost;
+                  }
+                }
+                
+                $total_cost=$total_actual_cost-$total_discount_cost;
                 $grand_tot = $tot_tax+$total_cost;
-				
             }
-			$loyaltypoints=LoyaltyPoints::where('is_active',1)->where('is_deleted',"0")->first();
-						$points='';
-						if($loyaltypoints){
-							if($total_cost >= $loyaltypoints->order_amount){
-								$points=($total_cost * $loyaltypoints->point)/100;
-								   
-							}
-						}
+
+          // $cart_count = count($cart);
+            $cart_count = $c_count;
+
+            $cust_points_in             =   (int)  CustomerPoints ::where('user_id',$user_id)->where('is_deleted',0)->sum('credit'); 
+            $cust_points_out            =   (int)  CustomerPoints ::where('user_id',$user_id)->where('is_deleted',0)->sum('debit'); 
+            $points = ($cust_points_in-$cust_points_out);
+            $points_value = SettingOther::where('is_deleted',0)->where('is_active',1)->first()->point_equivalent;
+
+            $delivery_methods = Delivery::where('is_active',1)->where('is_deleted',0)->orderBy('id','desc')->get();
+            $delivery_data = [];
+            if($delivery_methods)
+            {
+            foreach($delivery_methods as $fk=>$fv)
+            {
+            $delivery_md['method'] = $fv->delivery_type_name;
+            // $delivery_md['desc'] = $fv->delivery_description;
+            $delivery_md['charge'] = $fv->delivery_charges;
+            $delivery_data[] = $delivery_md;
+            }
+
+            }
+
             $sale_before  =  SaleOrder::where('cust_id',$user_id)->count();
             if($sale_before<1)
             {
@@ -187,7 +212,7 @@ class CartController extends Controller
                 }
             }
             $before_checkout_product=array_values(array_filter(array_unique($before_checkout_product, SORT_REGULAR)));
-            return ['httpcode'=>200,'status'=>'success','message'=>'Success','data'=>['cart_count'=>$cart_count,'product'=>$filter,'before_checkout_products'=>$before_checkout_product,'currency'=>getCurrency()->name,'wallet_balance'=>$wallet,'points'=>round($points),'reward'=>$rewards,'total_cost'=>number_format($total_actual_cost,2),'discount'=>number_format($total_discount_cost,2),'total_tax'=>number_format($tot_tax,2),'grand_total'=>number_format($grand_tot,2)]];       
+            return ['httpcode'=>200,'status'=>'success','message'=>'Success','data'=>['cart_count'=>$cart_count,'product'=>$seller_product_list,'before_checkout_products'=>$before_checkout_product,'delivery_data'=>$delivery_data,'currency'=>getCurrency()->name,'wallet_balance'=>$wallet,'points'=>round($points),'points_value'=>$points_value,'reward'=>$rewards,'total_cost'=>number_format($total_actual_cost,2),'discount'=>number_format($total_discount_cost,2),'total_tax'=>number_format($tot_tax,2),'grand_total'=>number_format($grand_tot,2)]];       
          }
          else
          {
@@ -197,7 +222,7 @@ class CartController extends Controller
 
     }
 	
-    function related_product($prd_id,$lang,$login){
+    function related_product($prd_id,$lang,$user){
         $data     =   [];
         
         $prod_data       =   Product::where('is_active',1)->where('is_deleted',0)->where('is_approved',1)->where('visible',1)->where('id',$prd_id)->first();
@@ -209,18 +234,18 @@ class CartController extends Controller
                     $prd_list['category_id']=$prod_data->category_id;
                      if($prd_list['category_id']){
 						$category=Category::where('category_id',$prod_data->category_id)->first();
-						$prd_list['is_rating']=$category->is_rating;
+						$prd_list['is_rating']=@$category->is_rating;
 					}else{
 						
 						$prd_list['is_rating']=0;
 					}
-                    $prd_list['category_name']=$this->get_content($prod_data->category->cat_name_cid,$lang);
+                    $prd_list['category_name']=$this->get_content(@$prod_data->category->cat_name_cid,$lang);
                     $prd_list['subcategory_id']=$prod_data->sub_category_id;
-                    $prd_list['subcategory_name']=$this->get_content($prod_data->subCategory->sub_name_cid,$lang);
+                    $prd_list['subcategory_name']=$this->get_content(@$prod_data->subCategory->sub_name_cid,$lang);
                     if($prod_data->brand_id)
                     {
                     $prd_list['brand_id']=$prod_data->brand_id;
-                    $prd_list['brand_name']=$this->get_content($prod_data->brand->brand_name_cid,$lang);
+                    $prd_list['brand_name']=$this->get_content(@$prod_data->brand->brand_name_cid,$lang);
                     }
                     else
                     {
@@ -235,13 +260,12 @@ class CartController extends Controller
                     $prd_list['product_type']='simple';    
 					$prd_list['min_order_qty']=$prod_data->min_order;
 					$prd_list['bulk_order_qty']=$prod_data->bulk_order;	
-						$price=$this->get_price($prod_data->id,$type=1,$login);
-						foreach ($price as $item) {
-							foreach ($item as $key => $value) {
-								$prd_list[$key] = $value;
-							} 
-						}
-						
+                        
+                        $price=get_crm_price($prod_data,$type=1,$user);
+                        foreach ($price as $key => $value) {
+                        $prd_list[$key] = $value;
+                        }
+
 					    $prd_list['stock']=$prod_data->prdStock($prod_data->id);
                         if($prd_list['stock'] <= 0)
                         {
@@ -265,13 +289,10 @@ class CartController extends Controller
                      $prd_list['product_type']='config'; 
                      $prd_list['min_order_qty']="Null";
 					 $prd_list['bulk_order_qty']="Null";
-					 $minprice_prd_id=$this->min_price_product($prod_data->id);
-					 $price=$this->get_price($minprice_prd_id,$type=2,$login);
-                     foreach ($price as $item) {
-							foreach ($item as $key => $value) {
-								$prd_list[$key] = $value;
-							} 
-						}
+					 $price=get_crm_price($prod_data,$type=1,$user);
+                        foreach ($price as $key => $value) {
+                        $prd_list[$key] = $value;
+                        }
 						
 						$prd_list['stock']=NULL;
                         $prd_list['is_out_of_stock']=NULL;
@@ -284,90 +305,7 @@ class CartController extends Controller
                     $prd_list['rating']=$this->get_rates($prod_data->id);
                     $prd_list['total_reviews']=$this->get_rates_count($prod_data->id);
                     $prd_list['image']=$this->get_product_image($prod_data->id); 
-                     //ASSOCIATIVE products
-                    if($prod_data->product_type == 2)
-                    {  
-                        $prices = $this->config_product_price($prod_data->id); 
-                        $special_ofr_available=$this->get_special_ofr_value($prices,$prod_data->id); 
-                        $prd_ass = AssociatProduct::where('prd_id',$prod_data->id)->where('is_deleted',0)->get();
-                        if(count($prd_ass)>0)
-                        {
-                            foreach($prd_ass as $rows)
-                            {
-                            $product_visibility= Product::where('id',$rows->ass_prd_id)->where('is_active',1)->where('is_deleted',0)->first();
-                            if($product_visibility){
-                            //$associative_prd[]=$this->ass_related_product($rows->ass_prd_id,$lang);
-                            
-                                $associative_prd[]=$this->ass_related_product1($product_visibility->id,$special_ofr_available,$lang,$login);
-                            
-                            
-                             }
-                            }
-                        }
-                        else
-                        {
-                            $associative_prd=[];
-                        }
-                  }
-                  else
-                  {
-                    $associative_prd=[];
-                  }
-				   $variants_list=[];
-				 //Variants List   
-				if($associative_prd){
-					//dd(count($associative_prd));
-					$variants_list = array();
-					foreach($associative_prd as $asso_prod){
-						$attr_value=$asso_prod['attr_value'];
-						$attr_name=$asso_prod['attr_name'];
-						$data['pro_id']=$asso_prod['product_id'];
-						if($asso_prod['sub_attributes']){
-						foreach($asso_prod['sub_attributes'] as $row1){
-						
-						if($attr_value){
-						$data['combination']=$attr_value." ".$attr_name ." - ".$row1['attr_value']." ".$row1['attr_name'];
-						}else{
-						$data['variants']=$row1['attr_value']." ".$row1['attr_name'];
-						}
-						$data['stock']=$row1['stock'];
-						$data['is_out_of_stock']=$row1['is_out_of_stock'];
-						$data['out_of_stock_selling']=$row1['out_of_stock_selling'];
-						$data['min_order_qty']=$asso_prod['min_order'];
-						$data['bulk_order_qty']=$asso_prod['bulk_order'];
-						$data['image']=$row1['image'];
-						$price=$this->get_price($data['pro_id'],$type=2,$login);
-						foreach ($price as $item) {
-							foreach ($item as $key => $value) {
-								$data[$key] = $value;
-							} 
-						}	
-						
-						}
-						}else{
-						    $data['combination']=$attr_value." ".$attr_name;
-						    $data['stock']=$asso_prod['stock'];
-    					    $data['is_out_of_stock']=$asso_prod['is_out_of_stock'];
-    					    $data['out_of_stock_selling']=$asso_prod['out_of_stock_selling'];
-    						$data['min_order_qty']=$asso_prod['min_order'];
-    						$data['bulk_order_qty']=$asso_prod['bulk_order'];
-    						$data['image']=$asso_prod['image'];
-    						$price=$this->get_price($data['pro_id'],$type=2,$login);
-    						foreach ($price as $item) {
-    							foreach ($item as $key => $value) {
-    								$data[$key] = $value;
-    							} 
-    						}
-						    
-						}
-					
-					$variants_list[] = $data;
-					}
-				}    
-
                     
-				  $prd_list['variants_list']=$variants_list;
-                     
 					
 					$data             =   $prd_list;
                     
@@ -1701,9 +1639,12 @@ $i++;
    
 	}
 	
-   function get_cart_products($prd_id,$cart_id,$qty,$lang){
+   function get_cart_products($prd_id,$cart_id,$qty,$lang,$prd_assign_id,$assortment_id,$user){
         $data     =   [];
         $prod_data       =   Product::where('is_active',1)->where('is_deleted',0)->where('id',$prd_id)->first();
+        $crm_product_id = $prod_data->crmProduct->id;
+        $prd_assort = CrmPartAssortmentMaster::where('productID',$crm_product_id)->where('AssortmentID',$assortment_id)->where('is_deleted',0)->first();
+        
 			if($prod_data)   { 
 					$type=$prod_data->product_type;
 					$login=1;
@@ -1712,6 +1653,8 @@ $i++;
                     
 					$prd_list['cart_id']=$cart_id;   
                     $prd_list['product_id']=$prod_data->id;
+
+                    
 					
 					/*if($prod_data->visible==0){
 					
@@ -1725,54 +1668,66 @@ $i++;
                     $prd_list['product_name']=$prod_data->name;//($prod_data->name_cnt_id,$lang);
                    // }
 					$prd_list['type']=$prod_data->product_type;
-					$prd_list['quantity']=$qty;
+                    if($prd_assort)
+                    {
+                        $prd_list['assortment'] = $prd_assort->Assortments->Assortment;
+                        $prd_list['assortment_id'] = $prd_assort->AssortmentID;
+                        $prd_list['assortment_qty']=$qty;
+                        $prd_list['custom_quantity'] = 0;
+                        $quantity = $this->custom_product_qty($prod_data->id,$assortment_id,$user->id);
+                    }else{
+                        $prd_list['assortment'] = "Custom";
+                        $prd_list['custom_quantity'] = $this->custom_product_qty($prod_data->id,0,$user->id);
+                        $prd_list['assortment_qty']=0;
+                        $quantity = $this->custom_product_qty($prod_data->id,0,$user->id);
+                    }
+                    if($prod_data->crmProduct->Colour)
+                    {
+                        $prd_list['colour'] = $prod_data->crmProduct->Colour->ColourName;
+                    }else{
+                        $prd_list['colour'] = "";
+                    }
+                  
+					$prd_list['quantity'] = $quantity;
+                   if($prod_data->crmProduct->prdBranch)
+                   {
+                    $prd_list['store_id'] = $prod_data->crmProduct->prdBranch->BranchId;
+                   }else{
+                    $prd_list['store_id'] = "";
+                   } 
+                                          
                     $prd_list['category_id']=$prod_data->category_id;
                     $prd_list['category_name']=$this->get_content($prod_data->category->cat_name_cid,$lang);
                     $prd_list['subcategory_id']=$prod_data->sub_category_id;
                     $prd_list['subcategory_name']=$this->get_content($prod_data->subCategory->sub_name_cid,$lang);
-                    if($prod_data->product_type==1){
-					$prd_list['visible_product_id']=$prod_data->id;
-					}else{
-					$associative_prod_data       =   AssociatProduct::where('ass_prd_id',$prod_data->id)->where('is_deleted',0)->first();
-					if($associative_prod_data){
-					$getattributes=$this->getAttributesOfAssociativeProducts($prod_data->id,$lang);
-					if(isset($getattributes[0]) && isset($getattributes[1])){
-					$prd_list['variant_name']=$getattributes[0]." - ".$getattributes[1];
-					}else{
-					$prd_list['variant_name']=$getattributes[0];    
-					}
-					$prd_list['visible_product_id']=$associative_prod_data->prd_id;
-					}else{
-					$prd_list['visible_product_id']=0;
-					}
-					
-					}
+                    
                     $prd_list['currency']=getCurrency()->name;
                     if($prod_data->brand_id)
                     {
                         $prd_list['brand_id']=$prod_data->brand_id;
-                        $prd_list['brand_name']=$this->get_content($prod_data->brand->brand_name_cid,$lang);
+                        $prd_list['brand_name']=$this->get_content(@$prod_data->brand->brand_name_cid,$lang);
                     }
                     
                                        
-                       $actual_price =$this->get_actual_price($prd_id);
+                       $actual_price =get_crm_price($prod_data,$type=1,$user);
                    //$prod_data->prdPrice->price; 
                        
-                   
-                    $prd_list['unit_actual_price']=$actual_price;
-                    $tot_actual=$actual_price*$qty;
+                   // dd($actual_price);
+                    $prd_list['unit_actual_price']=$actual_price['actual_price'];
+                    $tot_actual=($actual_price['actual_price'])*$quantity;
                     $prd_list['total_actual_price']=$tot_actual;
                     $tax_amt=$prod_data->getTaxValue($prod_data->tax_id);
-					
+					// dd($tax_amt);
 					$total_tax_amount = $tot_actual * ($tax_amt/100);
                     $prd_list['total_tax_value']=$total_tax_amount;
-					foreach ($spec_offr as $item) {
-							foreach ($item as $key => $value) {
-								$prd_list[$key] = $value;
-							} 
-						}
+     //                dd($spec_offr);
+					// foreach ($spec_offr as $item) {
+					// 		foreach ($item as $key => $value) {
+					// 			$prd_list[$key] = $value;
+					// 		} 
+					// 	}
                    
-
+                    $prd_list['unit_discount_price'] = $actual_price['offer'];
                         $prd_list['stock']=$prod_data->prdStock($prod_data->id);
                         if($prd_list['stock'] <= 0)
                         {
@@ -1818,28 +1773,76 @@ $i++;
     //cart product according to seller
     function get_cart_seller_products($seller_id,$user_id,$lang){
         $data     =   [];
+        $user = CustomerMaster::where('id',$user_id)->first(); 
         
-        
-        $prod_data1       =   Product::join('usr_cart_item','prd_products.id','=','usr_cart_item.product_id')
-                            ->join('usr_cart','usr_cart_item.cart_id','=','usr_cart.id')
-                            ->where('usr_cart.user_id',$user_id)    
-                            ->where('usr_cart.is_active',1)
-                            ->where('usr_cart.is_deleted',0)
-                            ->where('usr_cart_item.is_active',1)
-                            ->where('usr_cart_item.is_deleted',0)
-                            ->where('prd_products.is_active',1)->where('prd_products.is_deleted',0)
-                            ->where('prd_products.seller_id',$seller_id)
-                            ->select('prd_products.*','usr_cart.*','usr_cart_item.*','usr_cart_item.product_id as cart_prd_id')
-                            ->get();
+       $prod_data1 = Cart::join('usr_cart_item','usr_cart.id','=','usr_cart_item.cart_id')->join('prd_products','usr_cart_item.product_id','=','prd_products.id')
+                        ->where('usr_cart.user_id',$user_id)    
+                        ->where('usr_cart.is_active',1)
+                        ->where('usr_cart.is_deleted',0)
+                        ->where('usr_cart_item.is_active',1)
+                        ->where('usr_cart_item.is_deleted',0)
+                        ->where('prd_products.is_deleted',0)
+                        ->where('prd_products.seller_id',$seller_id)
+                        ->groupBy('prd_products.id', 'usr_cart_item.assortment_id')
+                        ->select('prd_products.*','usr_cart.*','usr_cart_item.*','usr_cart_item.product_id as cart_prd_id')
+                        ->get();
+                        
+                     
             if($prod_data1)   { 
                 
                 foreach($prod_data1 as $prod_data){
-                    $store_active = Store::where('service_status',1)->where('is_active',1)->where('seller_id',$prod_data->seller_id)->first();
+                    $store_active = CrmBranch::where('DelStatus',0)->where('Branch_Id',$prod_data->seller_id)->first();
                     if($store_active)
                     {
-                    $prices    = $this->get_actual_price($prod_data->product_id);
-                    $spec_offr = $this->get_special_ofr_price($prod_data->product_id,$prices);    
-                    $qty=$prod_data->quantity;
+                    
+                   
+                    $single_prod_data       =   Product::where('is_active',1)->where('is_deleted',0)->where('id',$prod_data->product_id)->first();
+                    $prices    = get_crm_price($single_prod_data,$type=1,$user);
+                     
+                    $crm_product_id = $single_prod_data->crmProduct->id;
+                    $assortment_id = $prod_data->assortment_id;
+                    $prd_assort = CrmPartAssortmentMaster::where('productID',$crm_product_id)->where('AssortmentID',$assortment_id)->where('is_deleted',0)->first();
+
+                    $qty=$prod_data->assortment_qty;
+                    // dd($prd_assort);
+                    if($prd_assort)
+                    {
+                        $prd_list['assortment'] = $prd_assort->Assortments->Assortment;
+                        $prd_list['assortment_id'] = $prd_assort->AssortmentID;
+                        $prd_list['assortment_id'] = $assortment_id;
+                        $prd_list['assortment_qty']=$qty;
+                        $prd_list['custom_quantity'] = 0;
+                        
+                       
+                            
+                            $child_detail = $this->children_data($single_prod_data->id,$assortment_id,$user_id,$qty,$prd_assort);
+                            $prd_list['child_detail']=$child_detail;
+                           
+                        
+                        
+                        $quantity = $this->custom_product_qty($single_prod_data->id,$assortment_id,$user_id);
+                        //if($user_id ==126){ dd($quantity); }
+                        $quantity = $quantity*$qty;
+                        //$prd_list['children'] = $prd_assort;
+                    }else{
+                        $prd_list['assortment'] = "Custom";
+                        $prd_list['custom_quantity'] = $this->custom_product_qty($single_prod_data->id,0,$user_id);
+                        $prd_list['assortment_qty']=0;
+                         $prd_list['assortment_id'] = 0;
+                            $child_qty = $prod_data->quantity;
+                            $child_detail = $this->children_data($single_prod_data->id,0,$user_id,$child_qty);
+                            $prd_list['child_detail']=$child_detail;
+                        
+                        $quantity = $this->custom_product_qty($single_prod_data->id,0,$user_id);
+                    }
+                    // dd($quantity);
+                    if($single_prod_data->crmProduct->Colour)
+                    {
+                        $prd_list['colour'] = $single_prod_data->crmProduct->Colour->ColourName;
+                    }else{
+                        $prd_list['colour'] = "";
+                    }
+
                     $prd_list['cart_id']=$prod_data->cart_id;   
                     $prd_list['product_id']=$prod_data->product_id;
                     if($prod_data->product_type==1){
@@ -1849,46 +1852,30 @@ $i++;
                     {
                         $prd_list['product_type'] ='config'; 
                     }
-                    if($prod_data->product_type==1){
+                   
                     $prd_list['product_name']=$this->get_content($prod_data->name_cnt_id,$lang);
                     $prd_list['image']=$this->get_product_image($prod_data->product_id);
-                    }
-                    else
-                    {
-                        $associate= AssociatProduct::where('ass_prd_id',$prod_data->cart_prd_id)->first();
-                        $ass_real_prd = Product::where('id',$associate->prd_id)->first();
-                        $attr_data =   AssignedAttribute::where('is_deleted',0)->where('prd_id',$prod_data->product_id)->get();
-                         //print_r($attr_data);die;
-                         $i=1;
-                        foreach($attr_data as $attr)
-                        {
-                        $prd_listsatr=$attr->attr_value;
-                        $prd_list['attr_name'.$i]=$prd_listsatr;
-                        $i++;
-                        }
-                        
-                        $prd_list['product_name']=$this->get_content($ass_real_prd->name_cnt_id,$lang); 
-                        $prd_list['image']=$this->get_product_image($ass_real_prd->id);
-                    }
-                    $prd_list['quantity']=$prod_data->quantity;
+                    
+                   
+                    $prd_list['quantity']=$quantity;
                     $prd_list['category_id']=$prod_data->category_id;
-                    $prd_list['category_name']=$this->get_content($prod_data->category->cat_name_cid,$lang);
+                    $prd_list['category_name']=$this->get_content(@$single_prod_data->category->cat_name_cid,$lang);
                     $prd_list['subcategory_id']=$prod_data->sub_category_id;
-                    $prd_list['subcategory_name']=$this->get_content($prod_data->subCategory->sub_name_cid,$lang);
+                    $prd_list['subcategory_name']=$this->get_content(@$single_prod_data->subCategory->sub_name_cid,$lang);
                     $prd_list['seller_id']=$prod_data->seller_id;
                    // $prd_list['brand_id']=$prod_data->brand_id;
                     $prd_list['currency']=getCurrency()->name;
                     if($prod_data->brand_id)
                     {
                         $prd_list['brand_id']=$prod_data->brand_id;
-                        $prd_list['brand_name']=$this->get_content($prod_data->brand->brand_name_cid,$lang);
+                        $prd_list['brand_name']=$this->get_content(@$single_prod_data->brand->brand_name_cid,$lang);
                     }
-                    //$prd_list['brand_name']=$this->get_content($prod_data->brand->brand_name_cid,$lang);
-                    $actual_price =$this->get_actual_price($prod_data->product_id);
-                    $prd_list['unit_actual_price']=$actual_price;
-                    $tot_actual= $actual_price *  $qty;
+                    $actual_price = get_crm_price($single_prod_data,$type=1,$user); 
+                    $prd_list['unit_actual_price']=$actual_price['actual_price'];
+                    $tot_actual = $actual_price['actual_price']* $quantity;
                     $prd_list['total_actual_price']=$tot_actual;
-                    $tax_amt=$prod_data->getTaxValue($prod_data->tax_id);
+                    $tax_amt=$single_prod_data->getTaxValue($single_prod_data->tax_id);
+                    
                     $total_tax_amount = $tot_actual * ($tax_amt/100);
                     $prd_list['total_tax_value']=$total_tax_amount;
                    // $prd_list['cmm_type'] = $prod_data->commi_type;
@@ -1914,69 +1901,30 @@ $i++;
                      
                     
                     //Available offers for this product
-            $current_date=Carbon::now();
-           
-           
+            
+                   if($actual_price['offer']>0){
 
-            $shock = PrdShock_Sale::join('prd_shock_sale_products','prd_shock_sale.id','=','prd_shock_sale_products.shock_sale_id')
-            ->whereRaw("find_in_set(".$prod_data->product_id.",prd_shock_sale_products.prd_id)")
-            ->where('prd_shock_sale.is_active',1)->where('prd_shock_sale.is_deleted',0)->whereDate('prd_shock_sale.start_time','<=',$current_date)->whereDate('prd_shock_sale.end_time','>=',$current_date)
-            ->where('prd_shock_sale_products.is_active',1)->where('prd_shock_sale_products.is_deleted',0)->first();
-
-           
-             if($shock)
-            {
-                 $prd_list['offer_available']= 1;
-                 $prd_list['offer_name']= 'Shocking Sale'; 
-                if($shock->discount_type=="amount")
-                    {
-                        $prd_list['offer']=getCurrency()->name." ".$shock->discount_value." Off";
-                        $discount_value = $shock->discount_value;
-                        $unit_price = $actual_price-$discount_value;
-                        $prd_list['unit_discount_price']= $unit_price;
-                        $prd_list['total_discount_price']=$unit_price * $qty;
+                        $prd_list['offer_available']= 1;
+                        $prd_list['offer_name']= 'Discount'; 
+                        $sale_price =$this->get_sale_price($prod_data->product_id);
+                       
+                        $prd_list['unit_discount_price']=(float)( $actual_price['actual_price'] - $actual_price['offer_price']);
+                        $tot= $actual_price['offer_price'] * $quantity;
+                        $prd_list['total_discount_price']=(float) $tot;
                        
 
-                    }
-                    else
-                    {
-                        $prd_list['offer']=$shock->discount_value."% Off";
-                        $per=$shock->discount_value/100;
-                        $per_value = (float)$actual_price*(float)$per;
-                        $discount=(float)$actual_price-(float)$per_value;
-                        $round= number_format($discount, 2);
-                        $prd_list['unit_discount_price']=$discount;
-                        $prd_list['total_discount_price']=$discount * $qty;
-                    }
-            }
-            else if($spec_offr!=false)
-            {
-                $prd_list['offer_available']= 1;
-                $prd_list['offer_name']= 'Special Offer'; 
-                $prd_list['unit_discount_price']=$spec_offr;
-                $tot= $spec_offr * $qty;
-                $prd_list['total_discount_price']=$tot;
-                
-            }
-            
-            else
-            {
-                $prd_list['offer_available']= 0;
-                $prd_list['offer_name']= ''; 
-                $sale_price =$this->get_sale_price($prod_data->product_id);
-                if($sale_price!=0)
-                {
-                $prd_list['unit_discount_price']=(float)$sale_price;
-                $tot= $sale_price * $qty;
-                $prd_list['total_discount_price']=(float)$tot;
-                }
-                else
-                {
-                    $prd_list['unit_discount_price']=false;
-                    $prd_list['total_discount_price']=false;
-                }
-            }
+                   }else{
+                        $prd_list['offer_available']= 0;
+                        $prd_list['offer_name']= ''; 
+                        $sale_price =$this->get_sale_price($prod_data->product_id);
+                       
+                        $prd_list['unit_discount_price']=false;
+                        $prd_list['total_discount_price']=false;
+                        
+                   }
 
+       
+            $prd_list['product_point']=$prod_data->points;
             $prd_list['is_out_of_stock']=$prod_data->is_out_of_stock;
            
                     $data[]             =  $prd_list;
@@ -2070,6 +2018,85 @@ function get_cart_ofr_products($prd_id,$cart_id,$qty,$lang,$cat_id,$sub_id){
     {
         return false;
     }
+  }
+  
+   function custom_product_qty($prd_id,$assort,$user_id=0)
+  {
+    $custom_qty=DB::table("usr_cart_item")->select(DB::raw("SUM(quantity) as quantity"))->where('product_id',$prd_id)->where('assortment_id',$assort)->where('is_active',1)->where('is_deleted',0)->whereIn('cart_id',function($query) use($user_id) {
+   $query->select('id')->from('usr_cart')->where('is_deleted',0)->where('is_active',1)->where('user_id',$user_id);})->first();
+    
+    if($custom_qty->quantity > 0)
+    {
+        return $custom_qty->quantity;
+    }
+    else
+    {
+        return 0;
+    }
+  }
+  
+  function children_data($prd_id,$assort,$user_id=0,$qty=0,$prd_assort="")
+  {
+      $child_datails = $child_detail =  [];
+      if($assort ==0)
+      {
+         $custom_child=DB::table("usr_cart_item")->select("prd_assign_id","quantity")->where('product_id',$prd_id)->where('assortment_id',$assort)->where('is_active',1)->where('is_deleted',0)->whereIn('cart_id',function($query) use($user_id) {
+   $query->select('id')->from('usr_cart')->where('is_deleted',0)->where('user_id',$user_id);})->get(); 
+   
+        if($custom_child)
+        {
+            foreach($custom_child as $cust_key=>$cust_val)
+            {
+                
+                $child_id = $cust_val->prd_assign_id; $child_qty = $cust_val->quantity;
+                $child_data = CrmChildProductsMaster::where('ChildProductID',$child_id)->first();
+                if($child_data->SizeInfo){ $size_name = $child_data->SizeInfo->SizeName;}else{ $size_name = ""; }
+                $child_detail['size'] = $size_name;
+                $child_detail['quantity'] = $child_qty;
+                $child_detail['child_product_id'] = $child_data->ChildProductID;
+                $child_detail['available_quantity'] = $child_data->ChildPrdStock($child_data->ChildProductID,$child_data->prd_id);
+                                        
+                $child_datails[]=$child_detail;
+                
+            }
+            
+        }
+
+       
+      }else{
+          
+        if($prd_assort->Assortments)
+            {
+        
+                if($prd_assort->AssortmentsDetail)
+                {
+        
+                    foreach($prd_assort->AssortmentsDetail as $child_prod_k=>$child_val)
+                    {
+                        
+                       if($child_val->ChildProduct){ $size_name = $child_val->ChildProduct->SizeInfo->SizeName; }else{
+                          $size_name = "";
+                           
+                       } 
+        
+                            $child_detail['size'] = $size_name;
+                            $child_detail['quantity'] = $child_val->ChildQuantity;
+                             $child_detail['child_product_id'] = $child_val->ChildProductID;
+                            if($child_val->ChildProduct){ $child_detail['available_quantity'] = $child_val->ChildProduct->ChildPrdStock($child_val->ChildProduct->ChildProductID,$child_val->ChildProduct->prd_id); }else{ $child_detail['available_quantity'] =0; }
+                            $child_datails[]=$child_detail; 
+        
+                        
+                    }
+              
+        
+                }
+                
+            }
+          
+          
+      }
+   
+   return $child_datails;
   }
 
     //Product sale price

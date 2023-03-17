@@ -94,7 +94,7 @@ class Homepage extends Controller
         //category
         $category_data= Category::where('is_active',1)->where('is_deleted',0)->orderBy('sort_order')->get();
        foreach($category_data as $key)
-        {   $image = url('storage/app/public/category/'.$key->image); 
+        {   $image = url('public/storage/app/public/category/'.$key->image); 
             $category_array=['id'=>$key->category_id,
             'category_name'=>$key->get_content($key->cat_name_cid,$lang_id),
             'description'=>$key->get_content($key->cat_desc_cid,$lang_id),
@@ -122,14 +122,14 @@ class Homepage extends Controller
                     $latest_prd_list['category_id']=$row->category_id;
 					if($latest_prd_list['category_id']){
 						$category=Category::where('category_id',$row->category_id)->first();
-						$latest_prd_list['is_rating']=$category->is_rating;
+						$latest_prd_list['is_rating']=@$category->is_rating;
 					}else{
 						
 						$latest_prd_list['is_rating']=0;
 					}
-                    $latest_prd_list['category_name']=$row->get_content($row->category->cat_name_cid,$lang_id);
+                    $latest_prd_list['category_name']=$row->get_content(@$row->category->cat_name_cid,$lang_id);
                     $latest_prd_list['subcategory_id']=$row->sub_category_id;
-                    $latest_prd_list['subcategory_name']=$row->get_content($row->subCategory->sub_name_cid,$lang_id);
+                    $latest_prd_list['subcategory_name']=$row->get_content(@$row->subCategory->sub_name_cid,$lang_id);
                     if($row->brand_id)
                     {
                     $latest_prd_list['brand_id']=$row->brand_id;
@@ -146,12 +146,13 @@ class Homepage extends Controller
                     {
                     $latest_prd_list['product_type']='simple';    
 						
-						$latest_prd_price=$this->get_price($row->id,$type=1,$login);
-						foreach ($latest_prd_price as $item) {
-							foreach ($item as $key => $value) {
-								$latest_prd_list[$key] = $value;
-							} 
-						}
+						
+						
+						$latest_prd_price=get_crm_price($row,$type=1,$user);
+                        foreach ($latest_prd_price as $key => $value) {
+                            $latest_prd_list[$key] = $value;
+                        } 
+                        
 
 					}
                     else
@@ -159,14 +160,10 @@ class Homepage extends Controller
                      $latest_prd_list['product_type']='config'; 
                       $latest_prd_list['min_order_qty']="Null";
 					 $latest_prd_list['bulk_order_qty']="Null";
-					 $minprice_prd_id=$this->min_price_product($row->id);
-					//dd($minprice_prd_id);
-					$latest_prd_price=$this->get_price($minprice_prd_id,$type=2,$login);
-					foreach ($latest_prd_price as $item) {
-						foreach ($item as $key => $value) {
-							$latest_prd_list[$key] = $value;
-						} 
-					}
+					 $latest_prd_price=get_crm_price($row,$type=1,$user);
+                        foreach ($latest_prd_price as $key => $value) {
+                            $latest_prd_list[$key] = $value;
+                        } 
 						
 					}
                     $latest_prd_list['short_description']=$row->get_content($row->short_desc_cnt_id,$lang_id);
@@ -337,7 +334,7 @@ class Homepage extends Controller
 					$b_list['brand_name']=$this->get_content($row->brand_name_cid,$lang_id);
 					$b_list['brand_description']=$this->get_content($row->brand_desc_cid,$lang_id); 
 					if($row->image){
-                    $b_list['brand_image']=config('app.storage_url').'/app/public/brands/'.$row->image;
+                    $b_list['brand_image']= url('public/uploads/storage/app/public/brands/'.$row->image); 
 					}else{
 					    $b_list['brand_image']="";
 					}
@@ -358,7 +355,7 @@ class Homepage extends Controller
         return ['httpcode'=>200,'status'=>'success','page'=>'Home','message'=>'Success','data'=>['user_data'=>$user,
 
             'category'=>$categories,
-            'grocery_subcat'=>$grocery_subcat,
+            // 'grocery_subcat'=>$grocery_subcat,
 			'all_category_icon'=>$all_category,
 			// 'beverage_products'=>$beverage_products,
 			// 'fruit_and_vegs'=>$fruit_veg_subcat,
@@ -406,9 +403,23 @@ class Homepage extends Controller
             
         }
 
-//explore 
+//explore products based on purchase history
         $explore_products=[];
-        $explore_prod_data= Product::where('is_active',1)->where('is_deleted',0)->where('is_approved',1)->where('visible',1)->inRandomOrder()->limit(10)->get();
+        // $explore_prod_data= Product::where('is_active',1)->where('is_deleted',0)->where('is_approved',1)->where('visible',1)->inRandomOrder()->limit(10)->get();
+
+        $explore_prod_data=Product::join("sales_order_items as b","prd_products.id","=","b.parent_id")
+            ->select(DB::raw("sum(b.qty) as total"), "prd_products.*")
+            ->whereIn('b.sales_id',function($query) use($user_id) {
+   $query->select('id')->from('sales_orders')->where('cust_id',$user_id);})                        
+            ->where('b.row_total','>',0)->where('prd_products.is_approved',1)->where('prd_products.is_active',1)->where('prd_products.is_deleted',0)->orderBy('total','desc')->groupBy('b.parent_id')
+            ->skip(0)->take(10)->get();
+            
+            if(count($explore_prod_data) == 0)
+            {
+                 $explore_prod_data=Product::where('is_active',1)->where('is_deleted',0)->where('is_approved',1)->where('visible',1)->inRandomOrder()->limit(10)->get();
+            }
+
+            // dd($explore_prod_data);
           if(count($explore_prod_data)>0)
             {
                 foreach($explore_prod_data as $row)
@@ -421,14 +432,14 @@ class Homepage extends Controller
                     $explore_prd_list['category_id']=$row->category_id;
                     if($explore_prd_list['category_id']){
                         $category=Category::where('category_id',$row->category_id)->first();
-                        $explore_prd_list['is_rating']=$category->is_rating;
+                        $explore_prd_list['is_rating']=@$category->is_rating;
                     }else{
                         
                         $explore_prd_list['is_rating']=0;
                     }
-                    $explore_prd_list['category_name']=$row->get_content($row->category->cat_name_cid,$lang_id);
+                    $explore_prd_list['category_name']=$row->get_content(@$row->category->cat_name_cid,$lang_id);
                     $explore_prd_list['subcategory_id']=$row->sub_category_id;
-                    $explore_prd_list['subcategory_name']=$row->get_content($row->subCategory->sub_name_cid,$lang_id);
+                    $explore_prd_list['subcategory_name']=$row->get_content(@$row->subCategory->sub_name_cid,$lang_id);
                     if($row->brand_id)
                     {
                     $explore_prd_list['brand_id']=$row->brand_id;
@@ -696,14 +707,14 @@ class Homepage extends Controller
                     $prd_list['category_id']=$row->category_id;
                     if($prd_list['category_id']){
                         $category=Category::where('category_id',$row->category_id)->first();
-                        $prd_list['is_rating']=$category->is_rating;
+                        $prd_list['is_rating']=@$category->is_rating;
                     }else{
                         
                         $prd_list['is_rating']=0;
                     }
-                    $prd_list['category_name']=$row->get_content($row->category->cat_name_cid,$lang_id);
+                    $prd_list['category_name']=$row->get_content(@$row->category->cat_name_cid,$lang_id);
                     $prd_list['subcategory_id']=$row->sub_category_id;
-                    $prd_list['subcategory_name']=$row->get_content($row->subCategory->sub_name_cid,$lang_id);
+                    $prd_list['subcategory_name']=$row->get_content(@$row->subCategory->sub_name_cid,$lang_id);
                     if($row->brand_id)
                     {
                     $prd_list['brand_id']=$row->brand_id;
@@ -854,7 +865,7 @@ class Homepage extends Controller
 
            return ['httpcode'=>200,'status'=>'success','page'=>'Home','message'=>'Success','data'=>[
        
-           'stores'=>$occassions_list,
+           'occassions'=>$occassions_list,
           
             ]];
 
@@ -902,14 +913,14 @@ class Homepage extends Controller
                     $trending_prd_list['category_id']=$row->category_id;
                     if($trending_prd_list['category_id']){
                         $category=Category::where('category_id',$row->category_id)->first();
-                        $trending_prd_list['is_rating']=$category->is_rating;
+                        $trending_prd_list['is_rating']=@$category->is_rating;
                     }else{
                         
                         $trending_prd_list['is_rating']=0;
                     }
-                    $trending_prd_list['category_name']=$this->get_content($row->category->cat_name_cid,$lang_id);
+                    $trending_prd_list['category_name']=$this->get_content(@$row->category->cat_name_cid,$lang_id);
                     $trending_prd_list['subcategory_id']=$row->sub_category_id;
-                    $trending_prd_list['subcategory_name']=$this->get_content($row->subCategory->sub_name_cid,$lang_id);
+                    $trending_prd_list['subcategory_name']=$this->get_content(@$row->subCategory->sub_name_cid,$lang_id);
                     if($row->brand_id)
                     {
                     $trending_prd_list['brand_id']=$row->brand_id;
@@ -948,7 +959,7 @@ class Homepage extends Controller
                     $trending_prd_list['rating']=$this->get_rates($row->id);
                     if($trending_prd_list['category_id']){
                         $category=Category::where('category_id',$row->category_id)->first();
-                        $trending_prd_list['is_rating']=$category->is_rating;
+                        $trending_prd_list['is_rating']=@$category->is_rating;
                     }else{
                         
                         $trending_prd_list['is_rating']=0;
@@ -1021,14 +1032,14 @@ class Homepage extends Controller
                     $deals_prd_list['category_id']=$row->category_id;
                     if($deals_prd_list['category_id']){
                         $category=Category::where('category_id',$row->category_id)->first();
-                        $deals_prd_list['is_rating']=$category->is_rating;
+                        $deals_prd_list['is_rating']=@$category->is_rating;
                     }else{
                         
                         $deals_prd_list['is_rating']=0;
                     }
-                    $deals_prd_list['category_name']=$row->get_content($row->category->cat_name_cid,$lang_id);
+                    $deals_prd_list['category_name']=$row->get_content(@$row->category->cat_name_cid,$lang_id);
                     $deals_prd_list['subcategory_id']=$row->sub_category_id;
-                    $deals_prd_list['subcategory_name']=$row->get_content($row->subCategory->sub_name_cid,$lang_id);
+                    $deals_prd_list['subcategory_name']=$row->get_content(@$row->subCategory->sub_name_cid,$lang_id);
                     if($row->brand_id)
                     {
                     $deals_prd_list['brand_id']=$row->brand_id;
@@ -1123,14 +1134,14 @@ class Homepage extends Controller
                     $coming_prd_list['category_id']=$row->category_id;
                     if($coming_prd_list['category_id']){
                         $category=Category::where('category_id',$row->category_id)->first();
-                        $coming_prd_list['is_rating']=$category->is_rating;
+                        $coming_prd_list['is_rating']=@$category->is_rating;
                     }else{
                         
                         $coming_prd_list['is_rating']=0;
                     }
-                    $coming_prd_list['category_name']=$row->get_content($row->category->cat_name_cid,$lang_id);
+                    $coming_prd_list['category_name']=$row->get_content(@$row->category->cat_name_cid,$lang_id);
                     $coming_prd_list['subcategory_id']=$row->sub_category_id;
-                    $coming_prd_list['subcategory_name']=$row->get_content($row->subCategory->sub_name_cid,$lang_id);
+                    $coming_prd_list['subcategory_name']=$row->get_content(@$row->subCategory->sub_name_cid,$lang_id);
                     if($row->brand_id)
                     {
                     $coming_prd_list['brand_id']=$row->brand_id;
@@ -1420,7 +1431,7 @@ class Homepage extends Controller
 			$category_data= Category::where('is_active',1)->where('is_deleted',0)->orderBy('sort_order')->get();
            
 		   foreach($category_data as $cat)
-            {  $image = url('storage/app/public/category/'.$cat->image);
+            {  $image = url('public/storage/app/public/category/'.$cat->image);
                 // $prod_exist = Product::where('category_id',$cat->category_id)->where('is_active',1)->where('is_deleted',0)->where('visible',1)->where('is_approved',1)->first();
                 // if($prod_exist)
                 // {
@@ -1466,7 +1477,7 @@ class Homepage extends Controller
             $b_list['brand_name']=$this->get_content($row->brand_name_cid,$lang_id);
             $b_list['brand_description']=$this->get_content($row->brand_desc_cid,$lang_id); 
 if($row->image){
-                    $b_list['brand_image']=config('app.storage_url').'/app/public/brands/'.$row->image;
+                    $b_list['brand_image']=url('public/uploads/storage/app/public/brands/'.$row->image); 
 					}else{
 					    $b_list['brand_image']="";
 					}
@@ -1499,7 +1510,7 @@ if($row->image){
 			if($subcat)   {   foreach($subcat as $k=>$row){ 
                 if($row->image!='')
                 {
-                $image = url('storage/app/public/subcategory/'.$row->image);
+                $image = url('public/storage/app/public/subcategory/'.$row->image);
                 }
                 else
                 {
@@ -2452,11 +2463,11 @@ function ass_related_product1($prd_id,$special_ofr_available,$lang,$login){
                 { 
                     
                     $prd_list['id']=$row->id;
-                    $prd_list['product_name']=$row->get_content($row->name_cnt_id,$lang);
+                    $prd_list['product_name']=$row->get_content(@$row->name_cnt_id,$lang);
                     $prd_list['category_id']=$row->category_id;
-                    $prd_list['category_name']=$row->get_content($row->category->cat_name_cid,$lang);
+                    $prd_list['category_name']=$row->get_content(@$row->category->cat_name_cid,$lang);
                     $prd_list['subcategory_id']=$row->sub_category_id;
-                    $prd_list['subcategory_name']=$row->get_content($row->subCategory->sub_name_cid,$lang);
+                    $prd_list['subcategory_name']=$row->get_content(@$row->subCategory->sub_name_cid,$lang);
                     if($row->brand_id)
                     {
                     $prd_list['brand_id']=$row->brand_id;
@@ -2514,7 +2525,7 @@ function ass_related_product1($prd_id,$special_ofr_available,$lang,$login){
 			if($subcat)   {   foreach($subcat as $k=>$row){ 
                 if($row->image!='')
                 {
-                $image = url('storage/app/public/subcategory/'.$row->image);
+                $image = url('public/storage/app/public/subcategory/'.$row->image);
                 }
                 else
                 {

@@ -218,11 +218,17 @@ Route::post('/customer/password/change', [App\Http\Controllers\Api\Customer\Cust
 //Reward at register
 Route::post('/customer/register/reward', [App\Http\Controllers\Api\Customer\CustomerAuth_Api::class, 'referralCode']);
 
+//KYC
+Route::post('/customer/register/kyc', [App\Http\Controllers\Api\Customer\CustomerAuth_Api::class, 'kycUpdate']);
 
 //POINTS
-Route::post('/customer/points/list', [App\Http\Controllers\Api\Customer\LoyaltyPointController::class, 'point_list']);
+
+Route::post('/customer/points/list', [App\Http\Controllers\Api\Customer\CustomerPointsController::class, 'point_list']);
+
+// Route::post('/customer/points/list', [App\Http\Controllers\Api\Customer\LoyaltyPointController::class, 'point_list']);
 Route::post('/customer/points/rewards', [App\Http\Controllers\Api\Customer\LoyaltyPointController::class, 'reward_list']);
 Route::post('/customer/points/reward/redeem', [App\Http\Controllers\Api\Customer\LoyaltyPointController::class, 'reward_redeem']);
+
 Route::post('/customer/beverage-products', [App\Http\Controllers\Api\Customer\ProductController::class, 'beverage_products']);
 Route::post('/customer/fruit-veg-sub-list', [App\Http\Controllers\Api\Customer\Homepage::class, 'fruit_veg_sub_list']);
 Route::post('/customer/explore-products', [App\Http\Controllers\Api\Customer\ProductController::class, 'explore_products']);
@@ -239,3 +245,16 @@ Route::post('/customer/home/featured', [App\Http\Controllers\Api\Customer\Homepa
 Route::post('/customer/home/explore', [App\Http\Controllers\Api\Customer\Homepage::class, 'home_explore']);
 Route::post('/customer/home/stores', [App\Http\Controllers\Api\Customer\Homepage::class, 'home_stores']);
 Route::post('/customer/home/occasion', [App\Http\Controllers\Api\Customer\Homepage::class, 'home_occasions']);
+
+
+Route::post('/customer/products/stores-list', [App\Http\Controllers\Api\Customer\ProductController::class, 'stores_list']);
+Route::post('/customer/products/price-split', [App\Http\Controllers\Api\Customer\ProductController::class, 'pricesplit_list']);
+Route::post('/customer/products/occasion-list', [App\Http\Controllers\Api\Customer\ProductController::class, 'all_occasions']);
+Route::post('/customer/products/coming-soon', [App\Http\Controllers\Api\Customer\ProductController::class, 'coming_soon']);
+Route::post('/customer/products/daily-deals', [App\Http\Controllers\Api\Customer\ProductController::class, 'deals_all']);
+
+//Payment_successful
+Route::post('/customer/paymentsuccess', [App\Http\Controllers\Api\Customer\PaymentSuccessController::class, 'paymentsuccess']);
+
+//Order Details
+Route::post('/customer/paymentsuccess', [App\Http\Controllers\Api\Customer\PaymentSuccessController::class, 'paymentsuccess']);

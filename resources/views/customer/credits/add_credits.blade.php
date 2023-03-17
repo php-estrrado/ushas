@@ -91,14 +91,14 @@ if(isset($credits) && count($credits)>0)
 									<div id="" class="col-6 fl">
 									<div class="form-group">
 									{{Form::label('per_purchase','Max Credit Per Purchase',['class'=>''])}}
-									{{Form::number('manage[per_purchase]',$per_purchase,['id'=>'per_purchase', 'class'=>'form-control','min'=>1,'placeholder'=>'Max Credit Per Purchase'])}}
+									{{Form::number('manage[per_purchase]',$per_purchase,['id'=>'per_purchase', 'class'=>'form-control','placeholder'=>'Max Credit Per Purchase'])}}
 									<span class="error"></span>
 									</div>
 									</div>
 									<div id="" class="col-6 fl">
 									<div class="form-group">
 									<div class="form-group">
-									{{Form::label('c_yes','Allow cash purchase if limit reached',['class'=>''])}} <span class="text-red">*</span>
+									{{Form::label('c_yes','Allow cash purchase if limit reached',['class'=>''])}}
 									<div class="col-12">
 									<label class="custom-control custom-checkbox custom-control-sm ">
 									<input type="checkbox" name="manage[allow_purchase]" class='custom-control-input' value="1" <?php if($allow_purchase ==1){ echo 'checked'; } ?> >

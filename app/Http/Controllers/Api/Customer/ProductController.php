@@ -40,12 +40,18 @@ use App\Models\UsrWishlist;
 use App\Models\PrdImage;
 use App\Models\UserVisit;
 use App\Models\UserProductVisit;
+use App\Models\Occasion;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Lang;
 use Carbon\Carbon;
 use App\Rules\Name;
 use Validator;
 use DBlackborough\Quill\Render;
+
+use App\Models\crm\{CrmAssortmentMaster, CrmChildProductsMaster, CrmCustomerType,CrmPartAssortmentDetails,
+CrmPartAssortmentMaster,CrmProduct,CrmSalesPriceList,CrmSalesPriceType,CrmSize,CrmBranch,CrmCompany,CrmColour};
+
+
 class ProductController extends Controller
 {
     
@@ -575,7 +581,7 @@ class ProductController extends Controller
      public function product_detail(Request $request)
     {
         $login=0;
-        $user_id=null;
+        $user_id=null; $user=[];
         if($request->post('access_token')){
             if(!$user = validateToken($request->post('access_token'))){ return invalidToken(); }
             $user_id = $user['user_id'];
@@ -669,37 +675,37 @@ class ProductController extends Controller
 					}else{
 					$prd_list['bulk_quantity']=0;
 					}						
-						$price=$this->get_price($prod_data->id,$type=1,$login);
-						foreach ($price as $item) {
-							foreach ($item as $key => $value) {
-								$prd_list[$key] = $value;
-							} 
-						}
+                        $price=get_crm_price($prod_data,$type=1,$user);
+                        ;
+                        foreach ($price as $key => $value) {
+                        $prd_list[$key] = $value;
+                        } 
+					
 					
 					}
                     else
                     {
                      $prd_list['product_type']='config'; 
-                     $prd_list['min_order_qty']="Null";
-					  $prd_list['bulk_order_qty']="Null";
-					$minprice_prd_id=$this->min_price_product($prod_data->id);
-					$price=$this->get_price($minprice_prd_id,$type=2,$login);
-                    foreach ($price as $item) {
-							foreach ($item as $key => $value) {
-								$prd_list[$key] = $value;
-							} 
-						}
+                     $prd_list['min_order_qty']=0;
+					  $prd_list['bulk_order_qty']=0;
+
+                    $price=get_crm_price($prod_data,$type=1,$user);
+
+                    foreach ($price as $key => $value) {
+                    $prd_list[$key] = $value;
+                    } 
 						
 					}
                     $prd_list['sku']=$prod_data->sku;
+                    $prd_list['seller_id']=$prod_data->seller_id;
                     $prd_list['category_id']=$prod_data->category_id;
-                    $prd_list['category_name']=$this->get_content($prod_data->category->cat_name_cid,$lang);
+                    $prd_list['category_name']=$this->get_content(@$prod_data->category->cat_name_cid,$lang);
                     $prd_list['subcategory_id']=$prod_data->sub_category_id;
-                    $prd_list['subcategory_name']=$this->get_content($prod_data->subCategory->sub_name_cid,$lang);
+                    $prd_list['subcategory_name']=$this->get_content(@$prod_data->subCategory->sub_name_cid,$lang);
                     if($prod_data->brand_id)
                     {
                     $prd_list['brand_id']=$prod_data->brand_id;
-                    $prd_list['brand_name']=$this->get_content($prod_data->brand->brand_name_cid,$lang);
+                    $prd_list['brand_name']=$this->get_content(@$prod_data->brand->brand_name_cid,$lang);
                     }
                     else
                     {
@@ -711,6 +717,18 @@ class ProductController extends Controller
                     $prd_list['long_description']=$this->get_content($prod_data->desc_cnt_id,$lang);
                     $prd_list['content']=$this->get_content($prod_data->content_cnt_id,$lang);
                     $prd_list['specification']=$this->get_content($prod_data->spec_cnt_id,$lang);
+                    $prd_list['points']=$prod_data->points;
+                    
+                    $color_id = $prod_data->crmProduct->ColourID;
+                    if(!empty($color_id))
+                    {
+                        $prd_list['color'] = CrmColour::where('ColourId',$color_id)->first()->ColourName;
+                    }
+                    else
+                    {
+                        $prd_list['color'] = '';
+                    }
+                    
                     if($prod_data->spec_cnt_id)
                     {
                         $result='';
@@ -769,89 +787,99 @@ class ProductController extends Controller
                     $prd_list['total_reviews']=$this->get_rates_count($prod_data->id);
                     $products=$prd_list;
                     $associative_prd=[];
+                    $product_assortments=[];
                    
                      //ASSOCIATIVE products
                     if($prod_data->product_type == 2)
                     {  
-                        $prices = $this->config_product_price($prod_data->id); 
-                        $special_ofr_available=$this->get_special_ofr_value($prices,$prod_data->id); 
-                        $prd_ass = AssociatProduct::where('prd_id',$prod_data->id)->where('is_deleted',0)->get();
-                        if(count($prd_ass)>0)
-                        {
-                            foreach($prd_ass as $rows)
-                            {
-                            $product_visibility= Product::where('id',$rows->ass_prd_id)->where('is_active',1)->where('is_deleted',0)->first();
-                            if($product_visibility){
-                            //$associative_prd[]=$this->ass_related_product($rows->ass_prd_id,$lang);
-                            
-                                $associative_prd[]=$this->ass_related_product1($product_visibility->id,$special_ofr_available,$lang,$login);
-                            
-                            
-                             }
-                            }
-                        }
-                        else
-                        {
-                            $associative_prd=[];
-                        }
-                  }
-                  else
-                  {
-                    $associative_prd=[];
-                  }
-				  $variants_list=[];
-				  //Variants List   
-				if($associative_prd){
-					//dd($associative_prd);
-					$variants_list = array();
-						foreach($associative_prd as $asso_prod){
-						$attr_value=$asso_prod['attr_value'];
-						$attr_name=$asso_prod['attr_name'];
-						$data['pro_id']=$asso_prod['product_id'];
-						if($asso_prod['sub_attributes']){
-						foreach($asso_prod['sub_attributes'] as $row1){
-						
-						if($attr_value){
-						$data['combination']=$attr_value." ".$attr_name ." - ".$row1['attr_value']." ".$row1['attr_name'];
-						}else{
-						$data['variants']=$row1['attr_value']." ".$row1['attr_name'];
-						}
-						$data['stock']=$row1['stock'];
-						$data['is_out_of_stock']=$row1['is_out_of_stock'];
-						$data['out_of_stock_selling']=$row1['out_of_stock_selling'];
-						$data['min_order_qty']=$asso_prod['min_order'];
-						$data['bulk_order_qty']=$asso_prod['bulk_order'];
-						$data['image']=$row1['image'];
-						$price=$this->get_price($data['pro_id'],$type=2,$login);
-						foreach ($price as $item) {
-							foreach ($item as $key => $value) {
-								$data[$key] = $value;
-							} 
-						}	
-						
-						}
-						}else{
-						    $data['combination']=$attr_value." ".$attr_name;
-						    $data['stock']=$asso_prod['stock'];
-    					    $data['is_out_of_stock']=$asso_prod['is_out_of_stock'];
-    					    $data['out_of_stock_selling']=$asso_prod['out_of_stock_selling'];
-    						$data['min_order_qty']=$asso_prod['min_order'];
-    						$data['bulk_order_qty']=$asso_prod['bulk_order'];
-    						$data['image']=$asso_prod['image'];
-    						$price=$this->get_price($data['pro_id'],$type=2,$login);
-    						foreach ($price as $item) {
-    							foreach ($item as $key => $value) {
-    								$data[$key] = $value;
-    							} 
-    						}
-						    
-						}
-					
-					$variants_list[] = $data;
-					}
-				} 
 
-				//dd($variants_list);
+                        // $prices = $this->config_product_price($prod_data->id); 
+                        // $special_ofr_available=$this->get_special_ofr_value($prices,$prod_data->id); 
+
+                        $crm_product = $prod_data->crmProduct;
+                        $variants_list = [];
+                        if($crm_product)
+                        {
+                            $crm_product_id = $crm_product->id;
+
+                            // check assortments
+                            $prd_assort = CrmPartAssortmentMaster::where('productID',$crm_product_id)->where('is_deleted',0)->get();
+                            if(count($prd_assort)>0)
+                            {
+                            foreach($prd_assort as $rows)
+                            {
+                                // dd($rows);
+                                // $product_assortments['assortment_id'] = $rows->AssortmentID;
+                                if($rows->Assortments)
+                                {
+                                    $assortment = $rows->Assortments;
+
+                                    // dd($rows->AssortmentsDetail);
+                                    $product_assortments['assortment'] = $assortment->Assortment;
+                                    $product_assortments['assortment_id'] = $assortment->AssortmentID;
+                                    if($rows->AssortmentsDetail)
+                                    {
+                                        
+                                        $k=0; $product_assortments['assortment_data'] = [];
+                                        foreach($rows->AssortmentsDetail as $child_prod_k=>$child_val)
+                                        {
+                                            
+                                           if($child_val->ChildProduct){ $product_assortments['assortment_data']['children'][$k]['size'] = $child_val->ChildProduct->SizeInfo->SizeName; }else{
+                                               $product_assortments['assortment_data']['children'][$k]['size'] = "";
+                                               
+                                           } 
+                                            $product_assortments['assortment_data']['children'][$k]['child_product_id'] = $child_val->ChildProductID;
+                                            $product_assortments['assortment_data']['children'][$k]['child_quantity'] = $child_val->ChildQuantity;
+                                           if($child_val->ChildProduct){
+                                               $product_assortments['assortment_data']['children'][$k]['available_quantity'] = $child_val->ChildProduct->ChildPrdStock($child_val->ChildProduct->ChildProductID,$prod_data->id);
+                                               
+                                           }else{
+                                               $product_assortments['assortment_data']['children'][$k]['available_quantity'] = 0;
+                                           } 
+
+                                            $k++;
+                                        }
+                                  
+
+                                    }
+                                    
+                                }
+
+                                $variants_list[] = $product_assortments;
+                            }
+                            }
+
+                            //custom assortment 
+
+                            $custom_assort = [];
+
+                            $cust_assort = $crm_product->childProducts;
+                            if($cust_assort)
+                            {
+                                $v=0;
+                                foreach($cust_assort as $ck=>$cv)
+                                {
+                                    $custom_assort['custom']['assortment_data']['children'][$v]['size'] = $cv->SizeInfo->SizeName;
+                                    $custom_assort['custom']['assortment_data']['children'][$v]['child_product_id'] = $cv->ChildProductID;
+                                    $custom_assort['custom']['assortment_data']['children'][$v]['available'] = $cv->ChildPrdStock($cv->ChildProductID,$prod_data->id);
+                                    $v++;
+                                }
+                            }
+
+                                            
+                            $variants_list[] =$custom_assort;
+                            // dd($prd_assort);
+                        }
+
+
+                        
+                  }
+
+                  // dd($custom_assort);
+                  
+				  
+
+				// dd($variants_list);
                     //related products
                     $prd_rel=RelatedProduct::where('prd_id',$request->id)->where('is_deleted',0)->get();
                     if(count($prd_rel)>0)
@@ -859,7 +887,7 @@ class ProductController extends Controller
                         foreach($prd_rel as $key)
                         {
                         //$related['products']=$this->related_product($key->rel_prd_id);
-                        $related_products[]=$this->related_product($key->rel_prd_id,$lang,$login);
+                        $related_products[]=$this->related_product($key->rel_prd_id,$lang,$user);
 
                         }
                         // $order = array_column($related_products, 'rating');
@@ -882,7 +910,7 @@ class ProductController extends Controller
         
 				if(count($viewed_prod)>0){
 					foreach($viewed_prod as $row){
-						$viewed_prds[]=$this->viewed_products($row->id,$lang,$login);
+						$viewed_prds[]=$this->viewed_products($row->id,$lang,$user);
 					}
 				}
 				else
@@ -952,7 +980,7 @@ class ProductController extends Controller
 
 
 
-                return response()->json(['httpcode'=>200,'status'=>'success','data'=>['product'=>$products,'varaiants_list'=>$variants_list,'relative_products'=>$related_products,'viewed_products'=>$viewed_prds,'review'=>$product_review,'total_review'=>$product_review_count,'rate_range'=>$product_review_range,'offer'=>$offer_list,'currency'=>getCurrency()->name]]);
+                return response()->json(['httpcode'=>200,'status'=>'success','data'=>['product'=>$products,'varaiants_list'=>@$variants_list,'relative_products'=>$related_products,'viewed_products'=>$viewed_prds,'review'=>$product_review,'total_review'=>$product_review_count,'rate_range'=>$product_review_range,'offer'=>$offer_list,'currency'=>getCurrency()->name]]);
 
            
             
@@ -1468,7 +1496,10 @@ class ProductController extends Controller
                       }     
     }
     //
-	public function get_price($prdid,$type,$login){ 
+	public function get_price($prdid,$type,$login){
+
+    
+
 		//$offer['offer_price']=false;
         $current_date=Carbon::now();
         $prod_data= Product::where('id',$prdid)->first();
@@ -1895,6 +1926,7 @@ class ProductController extends Controller
         $latest      = $request->latest;
         $low_to_high = $request->low_to_high;
         $high_to_low = $request->high_to_low;
+        $occassion = $request->occasion_id;
         $popular = $request->popular;
         $offset = $request->offset;
         $limit = $request->limit;
@@ -1936,7 +1968,11 @@ class ProductController extends Controller
 			$query->orderBy('prd_products.id', 'DESC');
 		}
 		$query->where('prd_products.is_approved',1)->where('prd_products.visible',1)->where('prd_products.is_active',1)->where('prd_products.is_deleted',0);
-		
+		if(isset($occassion) && $occassion>0)
+		{
+		 
+		  $query->where('prd_products.occasion_id',$occassion);  
+		}
 		if(isset($request->keyword)){
 		 // $query->where('prd_products.name', 'LIKE', '%'.$request->keyword.'%'); 
 		  $query->where(DB::raw('lower(prd_products.name)'), 'like', '%' . strtolower($request->keyword) . '%');
@@ -1975,9 +2011,9 @@ class ProductController extends Controller
                     $prd_list['product_id']=$row->id;
                     $prd_list['product_name']=$this->get_content($row->name_cnt_id,$lang);
                     $prd_list['category_id']=$row->category_id;
-                    $prd_list['category_name']=$this->get_content($row->category->cat_name_cid,$lang);
+                    $prd_list['category_name']=$this->get_content(@$row->category->cat_name_cid,$lang);
                     $prd_list['subcategory_id']=$row->sub_category_id;
-                    $prd_list['subcategory_name']=$this->get_content($row->subCategory->sub_name_cid,$lang);
+                    $prd_list['subcategory_name']=$this->get_content(@$row->subCategory->sub_name_cid,$lang);
                     if($row->brand_id)
                     {
                     $prd_list['brand_id']=$row->brand_id;
@@ -1993,12 +2029,11 @@ class ProductController extends Controller
                     $prd_list['product_type']='simple';    
 					$prd_list['min_order_qty']=$row->min_order;
 					$prd_list['bulk_order_qty']=$row->bulk_order;	
-						$price=$this->get_price($row->id,$type=1,$login);
-						foreach ($price as $item) {
-							foreach ($item as $key => $value) {
-								$prd_list[$key] = $value;
-							} 
-						}
+						
+                        $product_list_price=get_crm_price($row,$type=1,$user);
+                        foreach ($product_list_price as $key => $value) {
+                            $prd_list[$key] = $value;
+                        } 
 						
 					    $prd_list['stock']=$row->prdStock($row->id);
 					    //print_r($row->is_out_of_stock);
@@ -2024,13 +2059,10 @@ class ProductController extends Controller
                      $prd_list['product_type']='config'; 
                      $prd_list['min_order_qty']="Null";
 					 $prd_list['bulk_order_qty']="Null";
-					 $minprice_prd_id=$this->min_price_product($row->id);
-					 $price=$this->get_price($minprice_prd_id,$type=2,$login);
-                     foreach ($price as $item) {
-							foreach ($item as $key => $value) {
-								$prd_list[$key] = $value;
-							} 
-						}
+					 $product_list_price=get_crm_price($row,$type=1,$user);
+                        foreach ($product_list_price as $key => $value) {
+                            $prd_list[$key] = $value;
+                        } 
 						
 						$prd_list['stock']=NULL;
                         $prd_list['is_out_of_stock']=NULL;
@@ -2038,7 +2070,7 @@ class ProductController extends Controller
                         	
 						
 					}  
-				
+			     	$prd_list['occasion_id']=$row->occasion_id;
                     $prd_list['short_description']=$this->get_content($row->short_desc_cnt_id,$lang);
                     $prd_list['tag']=$this->get_product_tag($row->id,$lang);
                     if($prd_list['category_id']){
@@ -2053,115 +2085,13 @@ class ProductController extends Controller
                     //$prd_list['seller']=$row->Store($row->seller_id)->store_name;
                     //$prd_list['seller_id']=$row->seller_id;
                     $prd_list['image']=$this->get_product_image($row->id); 
-					 //ASSOCIATIVE products
-					 $associative_prd=[];
-                    if($row->product_type == 2)
-                    {  
-                        $prices = $this->config_product_price($row->id); 
-                        $special_ofr_available=$this->get_special_ofr_value($prices,$row->id); 
-                        $prd_ass = AssociatProduct::where('prd_id',$row->id)->where('is_deleted',0)->get();
-                        if(count($prd_ass)>0)
-                        {
-                            foreach($prd_ass as $rows)
-                            {
-                            $product_visibility= Product::where('id',$rows->ass_prd_id)->where('is_active',1)->where('is_deleted',0)->first();
-                            if($product_visibility){
-                            //$associative_prd[]=$this->ass_related_product($rows->ass_prd_id,$lang);
-                           // dd($login);
-                                $associative_prd[]=$this->ass_related_product1($product_visibility->id,$special_ofr_available,$lang,$login);
-                            
-                            
-                             }
-                            }
-                        }
-                        else
-                        {
-                            $associative_prd=[];
-                        }
-                  }
-                  else
-                  {
-                    $associative_prd=[];
-                  }		
-				//dd($associative_prd);
-                 $variants_list=[]; 
-				 //Variants List   
-				if($associative_prd){
-					//dd($associative_prd);
-					$variants_list = array();
-					foreach($associative_prd as $asso_prod){
-						$attr_value=$asso_prod['attr_value'];
-						$attr_name=$asso_prod['attr_name'];
-						$data['pro_id']=$asso_prod['product_id'];
-						if($asso_prod['sub_attributes']){
-						foreach($asso_prod['sub_attributes'] as $row1){
-						
-						if($attr_value){
-						$data['combination']=$attr_value." ".$attr_name ." - ".$row1['attr_value']." ".$row1['attr_name'];
-						}else{
-						$data['variants']=$row1['attr_value']." ".$row1['attr_name'];
-						}
-						$data['stock']=$row1['stock'];
-						$data['is_out_of_stock']=$row1['is_out_of_stock'];
-						$data['out_of_stock_selling']=$row1['out_of_stock_selling'];
-						$data['min_order_qty']=$asso_prod['min_order'];
-						$data['bulk_order_qty']=$asso_prod['bulk_order'];
-						$data['image']=$row1['image'];
-						$price=$this->get_price($data['pro_id'],$type=2,$login);
-						foreach ($price as $item) {
-							foreach ($item as $key => $value) {
-								$data[$key] = $value;
-							} 
-						}	
-						
-						}
-						}else{
-						    $data['combination']=$attr_value." ".$attr_name;
-						    $data['stock']=$asso_prod['stock'];
-    					    $data['is_out_of_stock']=$asso_prod['is_out_of_stock'];
-    					    $data['out_of_stock_selling']=$asso_prod['out_of_stock_selling'];
-    						$data['min_order_qty']=$asso_prod['min_order'];
-    						$data['bulk_order_qty']=$asso_prod['bulk_order'];
-    						$data['image']=$asso_prod['image'];
-    						$price=$this->get_price($data['pro_id'],$type=2,$login);
-    						foreach ($price as $item) {
-    							foreach ($item as $key => $value) {
-    								$data[$key] = $value;
-    							} 
-    						}
-						    
-						}
-					
-					$variants_list[] = $data;
-					}
-				}      
-
-                    
-			$prd_list['variants_list']=$variants_list;
-
-            $prd_list['config_prd']=$associative_prd; 
+				
             $prd_list['offers']=$this->available_offers($row->id,$lang); 
             $products[]=$prd_list;
             
                 
                 }
-				/*if($min_price!="" && $max_price!="" ){
-				$new=[];
-				$flag = 0;
-				foreach($products as $key=>$value){
-					if($value["actual_price"] >= $min_price && $value["actual_price"] <= $max_price){
-						$flag = 1;
-					}else{
-						$flag = 0;
-					}
-					if($flag==1){
-					$new[$key] = $value;
-					}
-				}
- 
-				
-				$products=$new;
-				}*/
+	
              
 			
 			
@@ -2221,6 +2151,8 @@ class ProductController extends Controller
         $limit = $request->limit;
 		$max_price   = $request->max_price;
         $min_price   = $request->min_price;
+        $store_id   = $request->store_id;
+
          if($request->offset==''){
 			$offset =0; 
 		 }
@@ -2231,11 +2163,23 @@ class ProductController extends Controller
 		\DB::enableQueryLog();
         $query = Product::query();
 		$query->select('prd_products.*');
-		$query->leftJoin('prd_prices', function($query) {
-        $query->on('prd_products.id','=','prd_prices.prd_id')
-                ->whereRaw('prd_prices.id IN (select MAX(a2.ID) from prd_prices as a2 join prd_products as u2 on u2.id = a2.prd_id group by u2.id)');
+
+        if ($max_price!='' && $min_price>=0) {  
+         $query->leftJoin('crm_salespricelist', function($query) {
+        $query->on('prd_products.id','=','crm_salespricelist.prd_id')
+                ->whereRaw('crm_salespricelist.SalesPriceListId IN (select MAX(a2.SalesPriceListId) from crm_salespricelist as a2 join prd_products as u2 on u2.id = a2.prd_id group by u2.id)');
+        })->whereBetween('crm_salespricelist.Amount', [$min_price, $max_price]);
+        }else{
+            $query->leftJoin('crm_salespricelist', function($query) {
+        $query->on('prd_products.id','=','crm_salespricelist.prd_id')
+                ->whereRaw('crm_salespricelist.SalesPriceListId IN (select MAX(a2.SalesPriceListId) from crm_salespricelist as a2 join prd_products as u2 on u2.id = a2.prd_id group by u2.id)');
         });
-        $query->orderBy('price', 'DESC');        
+
+        }
+        
+
+		
+        $query->orderBy('Amount', 'DESC');        
             
            
             
@@ -2249,12 +2193,11 @@ class ProductController extends Controller
         ->when($brand, function ($q,$brand) {
             return $q->where('prd_products.brand_id', $brand);
         });
-		
-		if ($max_price!='' && $min_price!='') {
-			$query->join('prd_prices', 'prd_prices.prd_id', '=', 'prd_products.id')
-			->whereBetween('prd_prices.price', [$min_price, $max_price]);
-		}
-		
+        if ($store_id!='' && $store_id>=0) {  
+            $query->join('crm_productbranches', 'crm_productbranches.prd_id', '=', 'prd_products.id')
+            ->whereIn('crm_productbranches.BranchId', [$store_id]);
+        }		
+		 
 		if(isset($request->keyword)){
 		  $query->where('name', 'like', '%'.$request->keyword.'%');  
 		}
@@ -2273,9 +2216,9 @@ class ProductController extends Controller
                     $prd_list['product_id']=$row->id;
                     $prd_list['product_name']=$this->get_content($row->name_cnt_id,$lang);
                     $prd_list['category_id']=$row->category_id;
-                    $prd_list['category_name']=$this->get_content($row->category->cat_name_cid,$lang);
+                    $prd_list['category_name']=$this->get_content(@$row->category->cat_name_cid,$lang);
                     $prd_list['subcategory_id']=$row->sub_category_id;
-                    $prd_list['subcategory_name']=$this->get_content($row->subCategory->sub_name_cid,$lang);
+                    $prd_list['subcategory_name']=$this->get_content(@$row->subCategory->sub_name_cid,$lang);
                     if($row->brand_id)
                     {
                     $prd_list['brand_id']=$row->brand_id;
@@ -2286,17 +2229,22 @@ class ProductController extends Controller
                     $prd_list['brand_id']='';
                     $prd_list['brand_name']='';  
                     }
+                    if($row->crmStore($row->id))
+                    {   
+                    $stores= $row->crmStore($row->id); 
+                    if($stores){ $prd_list['stores'] = implode(",",$stores); } 
+                    }else{
+                    $prd_list['stores'] = "";
+                    }
                     if($row->product_type==1)
                     {
                     $prd_list['product_type']='simple';    
 					$prd_list['min_order_qty']=$row->min_order;
 					$prd_list['bulk_order_qty']=$row->bulk_order;	
-						$price=$this->get_price($row->id,$type=1,$login);
-						foreach ($price as $item) {
-							foreach ($item as $key => $value) {
-								$prd_list[$key] = $value;
-							} 
-						}
+						$product_list_price=get_crm_price($row,$type=1,$user);
+                        foreach ($product_list_price as $key => $value) {
+                            $prd_list[$key] = $value;
+                        } 
 						
 					    $prd_list['stock']=$row->prdStock($row->id);
                         if($prd_list['stock'] <= 0)
@@ -2321,13 +2269,10 @@ class ProductController extends Controller
                      $prd_list['product_type']='config'; 
                      $prd_list['min_order_qty']="Null";
 					 $prd_list['bulk_order_qty']="Null";
-					 $minprice_prd_id=$this->min_price_product($row->id);
-					 $price=$this->get_price($minprice_prd_id,$type=2,$login);
-                     foreach ($price as $item) {
-							foreach ($item as $key => $value) {
-								$prd_list[$key] = $value;
-							} 
-						}
+					$product_list_price=get_crm_price($row,$type=1,$user);
+                        foreach ($product_list_price as $key => $value) {
+                            $prd_list[$key] = $value;
+                        } 
 						
 						$prd_list['stock']=NULL;
                         $prd_list['is_out_of_stock']=NULL;
@@ -2350,90 +2295,7 @@ class ProductController extends Controller
                     //$prd_list['seller']=$row->Store($row->seller_id)->store_name;
                     //$prd_list['seller_id']=$row->seller_id;
                     $prd_list['image']=$this->get_product_image($row->id); 
-					 //ASSOCIATIVE products
-					 $associative_prd=[];
-                    if($row->product_type == 2)
-                    {  
-                        $prices = $this->config_product_price($row->id); 
-                        $special_ofr_available=$this->get_special_ofr_value($prices,$row->id); 
-                        $prd_ass = AssociatProduct::where('prd_id',$row->id)->where('is_deleted',0)->get();
-                        if(count($prd_ass)>0)
-                        {
-                            foreach($prd_ass as $rows)
-                            {
-                            $product_visibility= Product::where('id',$rows->ass_prd_id)->where('is_active',1)->where('is_deleted',0)->first();
-                            if($product_visibility){
-                            //$associative_prd[]=$this->ass_related_product($rows->ass_prd_id,$lang);
-                            $associative_prd[]=$this->ass_related_product1($product_visibility->id,$special_ofr_available,$lang,$login);
-                            
-                            
-                             }
-                            }
-                        }
-                        else
-                        {
-                            $associative_prd=[];
-                        }
-                  }
-                  else
-                  {
-                    $associative_prd=[];
-                  }		
-
-                  $variants_list=[];
-			  //Variants List   
-				if($associative_prd){
-					//dd(count($associative_prd));
-					$variants_list = array();
-				foreach($associative_prd as $asso_prod){
-						$attr_value=$asso_prod['attr_value'];
-						$attr_name=$asso_prod['attr_name'];
-						$data['pro_id']=$asso_prod['product_id'];
-						if($asso_prod['sub_attributes']){
-						foreach($asso_prod['sub_attributes'] as $row1){
-						
-						if($attr_value){
-						$data['combination']=$attr_value." ".$attr_name ." - ".$row1['attr_value']." ".$row1['attr_name'];
-						}else{
-						$data['variants']=$row1['attr_value']." ".$row1['attr_name'];
-						}
-						$data['stock']=$row1['stock'];
-						$data['is_out_of_stock']=$row1['is_out_of_stock'];
-						$data['out_of_stock_selling']=$row1['out_of_stock_selling'];
-						$data['min_order_qty']=$asso_prod['min_order'];
-						$data['bulk_order_qty']=$asso_prod['bulk_order'];
-						$data['image']=$row1['image'];
-						$price=$this->get_price($data['pro_id'],$type=2,$login);
-						foreach ($price as $item) {
-							foreach ($item as $key => $value) {
-								$data[$key] = $value;
-							} 
-						}	
-						
-						}
-						}else{
-						    $data['combination']=$attr_value." ".$attr_name;
-						    $data['stock']=$asso_prod['stock'];
-    					    $data['is_out_of_stock']=$asso_prod['is_out_of_stock'];
-    					    $data['out_of_stock_selling']=$asso_prod['out_of_stock_selling'];
-    						$data['min_order_qty']=$asso_prod['min_order'];
-    						$data['bulk_order_qty']=$asso_prod['bulk_order'];
-    						$data['image']=$asso_prod['image'];
-    						$price=$this->get_price($data['pro_id'],$type=2,$login);
-    						foreach ($price as $item) {
-    							foreach ($item as $key => $value) {
-    								$data[$key] = $value;
-    							} 
-    						}
-						    
-						}
-					
-					$variants_list[] = $data;
-					}
-				} 
-
-                    
-			$prd_list['variants_list']=$variants_list;
+				
            // $prd_list['config_prd']=$associative_prd; 
             $prd_list['offers']=$this->available_offers($row->id,$lang); 
             $products[]=$prd_list;
@@ -2487,6 +2349,8 @@ class ProductController extends Controller
         $subcategory = $request->subcategory_id;
         $brand       = $request->brand_id;
         $low_to_high = $request->low_to_high;
+        $store_id   = $request->store_id;
+
 
         $offset = $request->offset;
         $limit = $request->limit;
@@ -2502,11 +2366,25 @@ class ProductController extends Controller
 		//\DB::enableQueryLog();
         $query = Product::query();
 		$query->select('prd_products.*');
-		$query->leftJoin('prd_prices', function($query) {
-        $query->on('prd_products.id','=','prd_prices.prd_id')
-                ->whereRaw('prd_prices.id IN (select MAX(a2.ID) from prd_prices as a2 join prd_products as u2 on u2.id = a2.prd_id group by u2.id)');
+
+        if ($max_price!='' && $min_price>=0) {  
+
+            $query->leftJoin('crm_salespricelist', function($query) {
+        $query->on('prd_products.id','=','crm_salespricelist.prd_id')
+                ->whereRaw('crm_salespricelist.SalesPriceListId IN (select MAX(a2.SalesPriceListId) from crm_salespricelist as a2 join prd_products as u2 on u2.id = a2.prd_id group by u2.id)');
+        })->whereBetween('crm_salespricelist.Amount', [$min_price, $max_price]);
+         
+        }else{
+
+            $query->leftJoin('crm_salespricelist', function($query) {
+        $query->on('prd_products.id','=','crm_salespricelist.prd_id')
+                ->whereRaw('crm_salespricelist.SalesPriceListId IN (select MAX(a2.SalesPriceListId) from crm_salespricelist as a2 join prd_products as u2 on u2.id = a2.prd_id group by u2.id)');
         });
-        $query->orderBy('price', 'ASC'); 
+            
+        }
+
+		
+        $query->orderBy('Amount', 'ASC'); 
 		$query->where('prd_products.is_approved',1)->where('prd_products.visible',1)->where('prd_products.is_active',1)->where('prd_products.is_deleted',0);
 		$query->when($category, function ($q,$category) {
             return $q->where('prd_products.category_id', $category);
@@ -2517,16 +2395,17 @@ class ProductController extends Controller
         ->when($brand, function ($q,$brand) {
             return $q->where('prd_products.brand_id', $brand);
         });
-		if ($max_price!='' && $min_price!='') {
-			$query->join('prd_prices', 'prd_prices.prd_id', '=', 'prd_products.id')
-			->whereBetween('prd_prices.price', [$min_price, $max_price]);
-		}
+        if ($store_id!='' && $store_id>=0) {  
+        $query->join('crm_productbranches', 'crm_productbranches.prd_id', '=', 'prd_products.id')
+        ->whereIn('crm_productbranches.BranchId', [$store_id]);
+        }
 		if(isset($request->keyword)){
 		  $query->where('name', 'like', '%'.$request->keyword.'%');  
 		}
         $prod_data_count = $query->groupBy('prd_products.id')->paginate(); 
         $prod_data = $query->groupBy('prd_products.id')->skip($offset)->take($limit)->get(); 
-       //dd(\DB::getQueryLog());
+        // dd($prod_data);
+       // dd(\DB::getQueryLog());
 	  
             if(!empty($prod_data))
             {
@@ -2537,9 +2416,9 @@ class ProductController extends Controller
                     $prd_list['product_id']=$row->id;
                     $prd_list['product_name']=$this->get_content($row->name_cnt_id,$lang);
                     $prd_list['category_id']=$row->category_id;
-                    $prd_list['category_name']=$this->get_content($row->category->cat_name_cid,$lang);
+                    $prd_list['category_name']=$this->get_content(@$row->category->cat_name_cid,$lang);
                     $prd_list['subcategory_id']=$row->sub_category_id;
-                    $prd_list['subcategory_name']=$this->get_content($row->subCategory->sub_name_cid,$lang);
+                    $prd_list['subcategory_name']=$this->get_content(@$row->subCategory->sub_name_cid,$lang);
                     if($row->brand_id)
                     {
                     $prd_list['brand_id']=$row->brand_id;
@@ -2550,18 +2429,23 @@ class ProductController extends Controller
                     $prd_list['brand_id']='';
                     $prd_list['brand_name']='';  
                     }
+                    if($row->crmStore($row->id))
+                    {   
+                    $stores= $row->crmStore($row->id); 
+                    if($stores){ $prd_list['stores'] = implode(",",$stores); } 
+                    }else{
+                    $prd_list['stores'] = "";
+                    }
                     if($row->product_type==1)
                     {
                     $prd_list['product_type']='simple';    
 					$prd_list['min_order_qty']=$row->min_order;
 					$prd_list['bulk_order_qty']=$row->bulk_order;	
-						$price=$this->get_price($row->id,$type=1,$login);
-						foreach ($price as $item) {
-							foreach ($item as $key => $value) {
-								$prd_list[$key] = $value;
-							} 
-						}
-						
+						$filter_prd_price=get_crm_price($row,$type=1,$user);
+                        foreach ($filter_prd_price as $key => $value) {
+                            $prd_list[$key] = $value;
+                        } 
+
 					    $prd_list['stock']=$row->prdStock($row->id);
                        if($prd_list['stock'] <= 0)
                         {
@@ -2585,14 +2469,10 @@ class ProductController extends Controller
                      $prd_list['product_type']='config'; 
                      $prd_list['min_order_qty']="Null";
 					 $prd_list['bulk_order_qty']="Null";
-					 $minprice_prd_id=$this->min_price_product($row->id);
-					 $price=$this->get_price($minprice_prd_id,$type=2,$login);
-                     foreach ($price as $item) {
-							foreach ($item as $key => $value) {
-								$prd_list[$key] = $value;
-							} 
-						}
-						
+					$filter_prd_price=get_crm_price($row,$type=1,$user);
+                        foreach ($filter_prd_price as $key => $value) {
+                            $prd_list[$key] = $value;
+                        } 
 						$prd_list['stock']=NULL;
                         $prd_list['is_out_of_stock']=NULL;
                         $prd_list['out_of_stock_selling']=NULL;
@@ -2613,93 +2493,7 @@ class ProductController extends Controller
                     //$prd_list['seller']=$row->Store($row->seller_id)->store_name;
                     //$prd_list['seller_id']=$row->seller_id;
                     $prd_list['image']=$this->get_product_image($row->id); 
-					 //ASSOCIATIVE products
-					 $associative_prd=[];
-                    if($row->product_type == 2)
-                    {  
-                        $prices = $this->config_product_price($row->id); 
-                        $special_ofr_available=$this->get_special_ofr_value($prices,$row->id); 
-                        $prd_ass = AssociatProduct::where('prd_id',$row->id)->where('is_deleted',0)->get();
-                        if(count($prd_ass)>0)
-                        {
-                            foreach($prd_ass as $rows)
-                            {
-                            $product_visibility= Product::where('id',$rows->ass_prd_id)->where('is_active',1)->where('is_deleted',0)->first();
-                            if($product_visibility){
-                            //$associative_prd[]=$this->ass_related_product($rows->ass_prd_id,$lang);
-                          
-                                $associative_prd[]=$this->ass_related_product1($product_visibility->id,$special_ofr_available,$lang,$login);
-                            
-                            
-                             }
-                            }
-                        }
-                        else
-                        {
-                            $associative_prd=[];
-                        }
-                  }
-                  else
-                  {
-                    $associative_prd=[];
-                  }		
-
-                $variants_list=[];  
-			  //Variants List   
-				if($associative_prd){
-					//dd(count($associative_prd));
-					$variants_list = array();
-					foreach($associative_prd as $asso_prod){
-						$attr_value=$asso_prod['attr_value'];
-						$attr_name=$asso_prod['attr_name'];
-						$data['pro_id']=$asso_prod['product_id'];
-						if($asso_prod['sub_attributes']){
-						foreach($asso_prod['sub_attributes'] as $row1){
-						
-						if($attr_value){
-						$data['combination']=$attr_value." ".$attr_name ." - ".$row1['attr_value']." ".$row1['attr_name'];
-						}else{
-						$data['variants']=$row1['attr_value']." ".$row1['attr_name'];
-						}
-						$data['stock']=$row1['stock'];
-						$data['is_out_of_stock']=$row1['is_out_of_stock'];
-						$data['out_of_stock_selling']=$row1['out_of_stock_selling'];
-						$data['min_order_qty']=$asso_prod['min_order'];
-						$data['bulk_order_qty']=$asso_prod['bulk_order'];
-						$data['image']=$row1['image'];
-						$price=$this->get_price($data['pro_id'],$type=2,$login);
-						foreach ($price as $item) {
-							foreach ($item as $key => $value) {
-								$data[$key] = $value;
-							} 
-						}	
-						
-						}
-						}else{
-						    $data['combination']=$attr_value." ".$attr_name;
-						    $data['stock']=$asso_prod['stock'];
-    					    $data['is_out_of_stock']=$asso_prod['is_out_of_stock'];
-    					    $data['out_of_stock_selling']=$asso_prod['out_of_stock_selling'];
-    						$data['min_order_qty']=$asso_prod['min_order'];
-    						$data['bulk_order_qty']=$asso_prod['bulk_order'];
-    						$data['image']=$asso_prod['image'];
-    						$price=$this->get_price($data['pro_id'],$type=2,$login);
-    						foreach ($price as $item) {
-    							foreach ($item as $key => $value) {
-    								$data[$key] = $value;
-    							} 
-    						}
-						    
-						}
-					
-					$variants_list[] = $data;
-					}
-				}    
-
-                    
-			$prd_list['variants_list']=$variants_list;
-
-           // $prd_list['config_prd']=$associative_prd; 
+					 
             $prd_list['offers']=$this->available_offers($row->id,$lang); 
             $products[]=$prd_list;
             
@@ -2755,7 +2549,9 @@ class ProductController extends Controller
         $brand       = $request->brand_id;
 		$max_price   = $request->max_price;
         $min_price   = $request->min_price;
-        
+        $store_id   = $request->store_id;
+
+
         $offset = $request->offset;
         $limit = $request->limit;
          if($request->offset==''){
@@ -2783,11 +2579,14 @@ class ProductController extends Controller
             return $q->where('prd_products.brand_id', $brand);
         });
 		
-		if ($max_price!='' && $min_price!='') {
-			$query->join('prd_prices', 'prd_prices.prd_id', '=', 'prd_products.id')
-			->whereBetween('prd_prices.price', [$min_price, $max_price]);
-		}
-		
+		 if ($max_price!='' && $min_price>=0) {  
+            $query->join('crm_salespricelist', 'crm_salespricelist.prd_id', '=', 'prd_products.id')
+            ->whereBetween('crm_salespricelist.Amount', [$min_price, $max_price]);
+        }
+        if ($store_id!='' && $store_id>=0) {  
+        $query->join('crm_productbranches', 'crm_productbranches.prd_id', '=', 'prd_products.id')
+        ->whereIn('crm_productbranches.BranchId', [$store_id]);
+        }
 		if(isset($request->keyword)){
 		  $query->where('name', 'like', '%'.$request->keyword.'%');  
 		}
@@ -2804,9 +2603,9 @@ class ProductController extends Controller
                     $prd_list['product_id']=$row->id;
                     $prd_list['product_name']=$this->get_content($row->name_cnt_id,$lang);
                     $prd_list['category_id']=$row->category_id;
-                    $prd_list['category_name']=$this->get_content($row->category->cat_name_cid,$lang);
+                    $prd_list['category_name']=$this->get_content(@$row->category->cat_name_cid,$lang);
                     $prd_list['subcategory_id']=$row->sub_category_id;
-                    $prd_list['subcategory_name']=$this->get_content($row->subCategory->sub_name_cid,$lang);
+                    $prd_list['subcategory_name']=$this->get_content(@$row->subCategory->sub_name_cid,$lang);
                     if($row->brand_id)
                     {
                     $prd_list['brand_id']=$row->brand_id;
@@ -2817,17 +2616,22 @@ class ProductController extends Controller
                     $prd_list['brand_id']='';
                     $prd_list['brand_name']='';  
                     }
+                    if($row->crmStore($row->id))
+                    {   
+                        $stores= $row->crmStore($row->id); 
+                       if($stores){ $prd_list['stores'] = implode(",",$stores); } 
+                    }else{
+                        $prd_list['stores'] = "";
+                    }
                     if($row->product_type==1)
                     {
                     $prd_list['product_type']='simple';    
 					$prd_list['min_order_qty']=$row->min_order;
 					$prd_list['bulk_order_qty']=$row->bulk_order;	
-						$price=$this->get_price($row->id,$type=1,$login);
-						foreach ($price as $item) {
-							foreach ($item as $key => $value) {
-								$prd_list[$key] = $value;
-							} 
-						}
+						$popular_prd_price=get_crm_price($row,$type=1,$user);
+                        foreach ($popular_prd_price as $key => $value) {
+                            $prd_list[$key] = $value;
+                        } 
 						
 					    $prd_list['stock']=$row->prdStock($row->id);
                         if($prd_list['stock'] <= 0)
@@ -2852,13 +2656,10 @@ class ProductController extends Controller
                      $prd_list['product_type']='config'; 
                      $prd_list['min_order_qty']="Null";
 					 $prd_list['bulk_order_qty']="Null";
-					 $minprice_prd_id=$this->min_price_product($row->id);
-					 $price=$this->get_price($minprice_prd_id,$type=2,$login);
-                     foreach ($price as $item) {
-							foreach ($item as $key => $value) {
-								$prd_list[$key] = $value;
-							} 
-						}
+					 $popular_prd_price=get_crm_price($row,$type=1,$user);
+                        foreach ($popular_prd_price as $key => $value) {
+                            $prd_list[$key] = $value;
+                        } 
 						
 						$prd_list['stock']=NULL;
                         $prd_list['is_out_of_stock']=NULL;
@@ -2881,93 +2682,7 @@ class ProductController extends Controller
                     //$prd_list['seller']=$row->Store($row->seller_id)->store_name;
                     //$prd_list['seller_id']=$row->seller_id;
                     $prd_list['image']=$this->get_product_image($row->id); 
-					 //ASSOCIATIVE products
-					 $associative_prd=[];
-                    if($row->product_type == 2)
-                    {  
-                        $prices = $this->config_product_price($row->id); 
-                        $special_ofr_available=$this->get_special_ofr_value($prices,$row->id); 
-                        $prd_ass = AssociatProduct::where('prd_id',$row->id)->where('is_deleted',0)->get();
-                        if(count($prd_ass)>0)
-                        {
-                            foreach($prd_ass as $rows)
-                            {
-                            $product_visibility= Product::where('id',$rows->ass_prd_id)->where('is_active',1)->where('is_deleted',0)->first();
-                            if($product_visibility){
-                            //$associative_prd[]=$this->ass_related_product($rows->ass_prd_id,$lang);
-                            
-                                $associative_prd[]=$this->ass_related_product1($product_visibility->id,$special_ofr_available,$lang,$login);
-                            
-                            
-                             }
-                            }
-                        }
-                        else
-                        {
-                            $associative_prd=[];
-                        }
-                  }
-                  else
-                  {
-                    $associative_prd=[];
-                  }		
-
-                $variants_list=[];  
-			 //Variants List   
-				if($associative_prd){
-					//dd(count($associative_prd));
-					$variants_list = array();
-					foreach($associative_prd as $asso_prod){
-						$attr_value=$asso_prod['attr_value'];
-						$attr_name=$asso_prod['attr_name'];
-						$data['pro_id']=$asso_prod['product_id'];
-						if($asso_prod['sub_attributes']){
-						foreach($asso_prod['sub_attributes'] as $row1){
-						
-						if($attr_value){
-						$data['combination']=$attr_value." ".$attr_name ." - ".$row1['attr_value']." ".$row1['attr_name'];
-						}else{
-						$data['variants']=$row1['attr_value']." ".$row1['attr_name'];
-						}
-						$data['stock']=$row1['stock'];
-						$data['is_out_of_stock']=$row1['is_out_of_stock'];
-						$data['out_of_stock_selling']=$row1['out_of_stock_selling'];
-						$data['min_order_qty']=$asso_prod['min_order'];
-						$data['bulk_order_qty']=$asso_prod['bulk_order'];
-						$data['image']=$row1['image'];
-						$price=$this->get_price($data['pro_id'],$type=2,$login);
-						foreach ($price as $item) {
-							foreach ($item as $key => $value) {
-								$data[$key] = $value;
-							} 
-						}	
-						
-						}
-						}else{
-						    $data['combination']=$attr_value." ".$attr_name;
-						    $data['stock']=$asso_prod['stock'];
-    					    $data['is_out_of_stock']=$asso_prod['is_out_of_stock'];
-    					    $data['out_of_stock_selling']=$asso_prod['out_of_stock_selling'];
-    						$data['min_order_qty']=$asso_prod['min_order'];
-    						$data['bulk_order_qty']=$asso_prod['bulk_order'];
-    						$data['image']=$asso_prod['image'];
-    						$price=$this->get_price($data['pro_id'],$type=2,$login);
-    						foreach ($price as $item) {
-    							foreach ($item as $key => $value) {
-    								$data[$key] = $value;
-    							} 
-    						}
-						    
-						}
 					
-					$variants_list[] = $data;
-					}
-				} 
-
-                    
-			$prd_list['variants_list']=$variants_list;
-
-          //  $prd_list['config_prd']=$associative_prd; 
             $prd_list['offers']=$this->available_offers($row->id,$lang); 
             $products[]=$prd_list;
             
@@ -3018,7 +2733,8 @@ class ProductController extends Controller
         $brand       = $request->brand_id;
 		$max_price   = $request->max_price;
         $min_price   = $request->min_price;
-       
+        $store_id   = $request->store_id;
+      
         $offset = $request->offset;
         $limit = $request->limit;
          if($request->offset==''){
@@ -3043,10 +2759,16 @@ class ProductController extends Controller
         ->when($brand, function ($q,$brand) {
             return $q->where('prd_products.brand_id', $brand);
         });
-         if ($max_price!='' && $min_price!='') {
-			$query->join('prd_prices', 'prd_prices.prd_id', '=', 'prd_products.id')
-			->whereBetween('prd_prices.price', [$min_price, $max_price]);
+        
+         if ($max_price!='' && $min_price>=0) {  
+			$query->join('crm_salespricelist', 'crm_salespricelist.prd_id', '=', 'prd_products.id')
+			->whereBetween('crm_salespricelist.Amount', [$min_price, $max_price]);
 		}
+
+        if ($store_id!='' && $store_id>=0) {  
+            $query->join('crm_productbranches', 'crm_productbranches.prd_id', '=', 'prd_products.id')
+            ->whereIn('crm_productbranches.BranchId', [$store_id]);
+        }
 		
 		if(isset($request->keyword)){
 		  $query->where('name', 'like', '%'.$request->keyword.'%');  
@@ -3059,14 +2781,14 @@ class ProductController extends Controller
             {
                 foreach($prod_data as $row)
                 {
-                   
+                 
                     //$prd_list['service_status']=$store_active->service_status;     
-                    $prd_list['product_id']=$row->id;
+                    $prd_list['product_id']=$row->id; 
                     $prd_list['product_name']=$this->get_content($row->name_cnt_id,$lang);
                     $prd_list['category_id']=$row->category_id;
-                    $prd_list['category_name']=$this->get_content($row->category->cat_name_cid,$lang);
+                    $prd_list['category_name']=$this->get_content(@$row->category->cat_name_cid,$lang);
                     $prd_list['subcategory_id']=$row->sub_category_id;
-                    $prd_list['subcategory_name']=$this->get_content($row->subCategory->sub_name_cid,$lang);
+                    $prd_list['subcategory_name']=$this->get_content(@$row->subCategory->sub_name_cid,$lang);
                     if($row->brand_id)
                     {
                     $prd_list['brand_id']=$row->brand_id;
@@ -3077,17 +2799,22 @@ class ProductController extends Controller
                     $prd_list['brand_id']='';
                     $prd_list['brand_name']='';  
                     }
+                    if($row->crmStore($row->id))
+                    {   
+                        $stores= $row->crmStore($row->id); 
+                       if($stores){ $prd_list['stores'] = implode(",",$stores); } 
+                    }else{
+                        $prd_list['stores'] = "";
+                    }
                     if($row->product_type==1)
                     {
                     $prd_list['product_type']='simple';    
 					$prd_list['min_order_qty']=$row->min_order;
 					$prd_list['bulk_order_qty']=$row->bulk_order;	
-						$price=$this->get_price($row->id,$type=1,$login);
-						foreach ($price as $item) {
-							foreach ($item as $key => $value) {
-								$prd_list[$key] = $value;
-							} 
-						}
+						$latest_prd_price=get_crm_price($row,$type=1,$user);
+                        foreach ($latest_prd_price as $key => $value) {
+                            $prd_list[$key] = $value;
+                        } 
 						
 					    $prd_list['stock']=$row->prdStock($row->id);
                         if($prd_list['stock'] <= 0)
@@ -3112,13 +2839,10 @@ class ProductController extends Controller
                      $prd_list['product_type']='config'; 
                      $prd_list['min_order_qty']="Null";
 					 $prd_list['bulk_order_qty']="Null";
-					 $minprice_prd_id=$this->min_price_product($row->id);
-					 $price=$this->get_price($minprice_prd_id,$type=2,$login);
-                     foreach ($price as $item) {
-							foreach ($item as $key => $value) {
-								$prd_list[$key] = $value;
-							} 
-						}
+					 $latest_prd_price=get_crm_price($row,$type=1,$user);
+                        foreach ($latest_prd_price as $key => $value) {
+                            $prd_list[$key] = $value;
+                        } 
 						
 						$prd_list['stock']=NULL;
                         $prd_list['is_out_of_stock']=NULL;
@@ -3131,7 +2855,7 @@ class ProductController extends Controller
                     $prd_list['rating']=$this->get_rates($row->id);
                     if($prd_list['category_id']){
 						$category=Category::where('category_id',$row->category_id)->first();
-						$prd_list['is_rating']=$category->is_rating;
+						$prd_list['is_rating']=@$category->is_rating;
 					}else{
 						
 						$prd_list['is_rating']=0;
@@ -3140,94 +2864,7 @@ class ProductController extends Controller
                     //$prd_list['seller']=$row->Store($row->seller_id)->store_name;
                     //$prd_list['seller_id']=$row->seller_id;
                     $prd_list['image']=$this->get_product_image($row->id); 
-					 //ASSOCIATIVE products
-					 $associative_prd=[];
-                    if($row->product_type == 2)
-                    {  
-                        $prices = $this->config_product_price($row->id); 
-                        $special_ofr_available=$this->get_special_ofr_value($prices,$row->id); 
-                        $prd_ass = AssociatProduct::where('prd_id',$row->id)->where('is_deleted',0)->get();
-                        if(count($prd_ass)>0)
-                        {
-                            foreach($prd_ass as $rows)
-                            {
-                            $product_visibility= Product::where('id',$rows->ass_prd_id)->where('is_active',1)->where('is_deleted',0)->first();
-                            if($product_visibility){
-                            //$associative_prd[]=$this->ass_related_product($rows->ass_prd_id,$lang);
-                            
-                                $associative_prd[]=$this->ass_related_product1($product_visibility->id,$special_ofr_available,$lang,$login);
-                            
-                            
-                             }
-                            }
-                        }
-                        else
-                        {
-                            $associative_prd=[];
-                        }
-                  }
-                  else
-                  {
-                    $associative_prd=[];
-                  }		
-
-                  
-			 $variants_list=[];
-				 //Variants List   
-				if($associative_prd){
-				//	dd($associative_prd);
-					$variants_list = array();
-					foreach($associative_prd as $asso_prod){
-						$attr_value=$asso_prod['attr_value'];
-						$attr_name=$asso_prod['attr_name'];
-						$data['pro_id']=$asso_prod['product_id'];
-						if($asso_prod['sub_attributes']){
-						foreach($asso_prod['sub_attributes'] as $row1){
-						
-						if($attr_value){
-						$data['combination']=$attr_value." ".$attr_name ." - ".$row1['attr_value']." ".$row1['attr_name'];
-						}else{
-						$data['variants']=$row1['attr_value']." ".$row1['attr_name'];
-						}
-						$data['stock']=$row1['stock'];
-						$data['is_out_of_stock']=$row1['is_out_of_stock'];
-						$data['out_of_stock_selling']=$row1['out_of_stock_selling'];
-						$data['min_order_qty']=$asso_prod['min_order'];
-						$data['bulk_order_qty']=$asso_prod['bulk_order'];
-						$data['image']=$row1['image'];
-						$price=$this->get_price($data['pro_id'],$type=2,$login);
-						foreach ($price as $item) {
-							foreach ($item as $key => $value) {
-								$data[$key] = $value;
-							} 
-						}	
-						
-						}
-						}else{
-						    $data['combination']=$attr_value." ".$attr_name;
-						    $data['stock']=$asso_prod['stock'];
-    					    $data['is_out_of_stock']=$asso_prod['is_out_of_stock'];
-    					    $data['out_of_stock_selling']=$asso_prod['out_of_stock_selling'];
-    						$data['min_order_qty']=$asso_prod['min_order'];
-    						$data['bulk_order_qty']=$asso_prod['bulk_order'];
-    						$data['image']=$asso_prod['image'];
-    						$price=$this->get_price($data['pro_id'],$type=2,$login);
-    						foreach ($price as $item) {
-    							foreach ($item as $key => $value) {
-    								$data[$key] = $value;
-    							} 
-    						}
-						    
-						}
 					
-					$variants_list[] = $data;
-					}
-				}    
-
-                    
-			$prd_list['variants_list']=$variants_list;
-
-           $prd_list['config_prd']=$associative_prd; 
             $prd_list['offers']=$this->available_offers($row->id,$lang); 
             $products[]=$prd_list;
             }
@@ -3322,9 +2959,9 @@ class ProductController extends Controller
                     $prd_list['product_id']=$row->id;
                     $prd_list['product_name']=$this->get_content($row->name_cnt_id,$lang);
                     $prd_list['category_id']=$row->category_id;
-                    $prd_list['category_name']=$this->get_content($row->category->cat_name_cid,$lang);
+                    $prd_list['category_name']=$this->get_content(@$row->category->cat_name_cid,$lang);
                     $prd_list['subcategory_id']=$row->sub_category_id;
-                    $prd_list['subcategory_name']=$this->get_content($row->subCategory->sub_name_cid,$lang);
+                    $prd_list['subcategory_name']=$this->get_content(@$row->subCategory->sub_name_cid,$lang);
                     if($row->brand_id)
                     {
                     $prd_list['brand_id']=$row->brand_id;
@@ -3389,7 +3026,7 @@ class ProductController extends Controller
                     $prd_list['rating']=$this->get_rates($row->id);
                     if($prd_list['category_id']){
 						$category=Category::where('category_id',$row->category_id)->first();
-						$prd_list['is_rating']=$category->is_rating;
+						$prd_list['is_rating']=@$category->is_rating;
 					}else{
 						
 						$prd_list['is_rating']=0;
@@ -3643,9 +3280,9 @@ class ProductController extends Controller
                     $prd_list['seller']=$row->Store($row->seller_id)->store_name;
                     $prd_list['product_name']=$this->get_content($row->name_cnt_id,$lang);
                     $prd_list['category_id']=$row->category_id;
-                    $prd_list['category_name']=$this->get_content($row->category->cat_name_cid,$lang);
+                    $prd_list['category_name']=$this->get_content(@$row->category->cat_name_cid,$lang);
                     $prd_list['subcategory_id']=$row->sub_category_id;
-                    $prd_list['subcategory_name']=$this->get_content($row->subCategory->sub_name_cid,$lang);
+                    $prd_list['subcategory_name']=$this->get_content(@$row->subCategory->sub_name_cid,$lang);
                     if($row->brand_id)
                     {
                     $prd_list['brand_id']=$row->brand_id;
@@ -3932,9 +3569,9 @@ class ProductController extends Controller
                     $prd_list['product_id']=$row->id;
                     $prd_list['product_name']=$this->get_content($row->name_cnt_id,$lang);
                     $prd_list['category_id']=$row->category_id;
-                    $prd_list['category_name']=$this->get_content($row->category->cat_name_cid,$lang);
+                    $prd_list['category_name']=$this->get_content(@$row->category->cat_name_cid,$lang);
                     $prd_list['subcategory_id']=$row->sub_category_id;
-                    $prd_list['subcategory_name']=$this->get_content($row->subCategory->sub_name_cid,$lang);
+                    $prd_list['subcategory_name']=$this->get_content(@$row->subCategory->sub_name_cid,$lang);
                     if($row->brand_id)
                     {
                     $prd_list['brand_id']=$row->brand_id;
@@ -3999,7 +3636,7 @@ class ProductController extends Controller
                     $prd_list['rating']=$this->get_rates($row->id);
                     if($prd_list['category_id']){
 						$category=Category::where('category_id',$row->category_id)->first();
-						$prd_list['is_rating']=$category->is_rating;
+						$prd_list['is_rating']=@$category->is_rating;
 					}else{
 						
 						$prd_list['is_rating']=0;
@@ -4217,9 +3854,9 @@ class ProductController extends Controller
                     $prd_list['product_id']=$prod_data->id;
                     $prd_list['product_name']=$this->get_content($prod_data->name_cnt_id,$lang);
                     $prd_list['category_id']=$prod_data->category_id;
-                    $prd_list['category_name']=$this->get_content($prod_data->category->cat_name_cid,$lang);
+                    $prd_list['category_name']=$this->get_content(@$prod_data->category->cat_name_cid,$lang);
                     $prd_list['subcategory_id']=$prod_data->sub_category_id;
-                    $prd_list['subcategory_name']=$this->get_content($prod_data->subCategory->sub_name_cid,$lang);
+                    $prd_list['subcategory_name']=$this->get_content(@$prod_data->subCategory->sub_name_cid,$lang);
                     if($prod_data->brand_id)
                     {
                     $prd_list['brand_id']=$prod_data->brand_id;
@@ -4472,7 +4109,7 @@ class ProductController extends Controller
                     
                     }}return $data;
     }
-    function related_product($prd_id,$lang,$login){
+    function related_product($prd_id,$lang,$user){
         $data     =   [];
         
         $prod_data       =   Product::where('is_active',1)->where('is_deleted',0)->where('is_approved',1)->where('visible',1)->where('id',$prd_id)->first();
@@ -4483,18 +4120,18 @@ class ProductController extends Controller
                     $prd_list['category_id']=$prod_data->category_id;
                     if($prd_list['category_id']){
 						$category=Category::where('category_id',$prod_data->category_id)->first();
-						$prd_list['is_rating']=$category->is_rating;
+						$prd_list['is_rating']=@$category->is_rating;
 					}else{
 						
 						$prd_list['is_rating']=0;
 					}
-                    $prd_list['category_name']=$this->get_content($prod_data->category->cat_name_cid,$lang);
+                    $prd_list['category_name']=$this->get_content(@$prod_data->category->cat_name_cid,$lang);
                     $prd_list['subcategory_id']=$prod_data->sub_category_id;
-                    $prd_list['subcategory_name']=$this->get_content($prod_data->subCategory->sub_name_cid,$lang);
+                    $prd_list['subcategory_name']=$this->get_content(@$prod_data->subCategory->sub_name_cid,$lang);
                     if($prod_data->brand_id)
                     {
                     $prd_list['brand_id']=$prod_data->brand_id;
-                    $prd_list['brand_name']=$this->get_content($prod_data->brand->brand_name_cid,$lang);
+                    $prd_list['brand_name']=$this->get_content(@$prod_data->brand->brand_name_cid,$lang);
                     }
                     else
                     {
@@ -4509,12 +4146,10 @@ class ProductController extends Controller
                     $prd_list['product_type']='simple';    
 					$prd_list['min_order_qty']=$prod_data->min_order;
 					$prd_list['bulk_order_qty']=$prod_data->bulk_order;	
-						$price=$this->get_price($prod_data->id,$type=1,$login);
-						foreach ($price as $item) {
-							foreach ($item as $key => $value) {
-								$prd_list[$key] = $value;
-							} 
-						}
+						$explore_prd_price=get_crm_price($prod_data,$type=1,$user);
+                        foreach ($explore_prd_price as $key => $value) {
+                        $prd_list[$key] = $value;
+                        } 
 						
 					    $prd_list['stock']=$prod_data->prdStock($prod_data->id);
                         if($prod_data->is_out_of_stock <= 0)
@@ -4539,13 +4174,10 @@ class ProductController extends Controller
                      $prd_list['product_type']='config'; 
                      $prd_list['min_order_qty']="Null";
 					 $prd_list['bulk_order_qty']="Null";
-					 $minprice_prd_id=$this->min_price_product($prod_data->id);
-					 $price=$this->get_price($minprice_prd_id,$type=2,$login);
-                     foreach ($price as $item) {
-							foreach ($item as $key => $value) {
-								$prd_list[$key] = $value;
-							} 
-						}
+					 $explore_prd_price=get_crm_price($prod_data,$type=1,$user);
+                        foreach ($explore_prd_price as $key => $value) {
+                        $prd_list[$key] = $value;
+                        } 
 						
 						$prd_list['stock']=NULL;
                         $prd_list['is_out_of_stock']=NULL;
@@ -4558,91 +4190,8 @@ class ProductController extends Controller
                     $prd_list['rating']=$this->get_rates($prod_data->id);
                     $prd_list['total_reviews']=$this->get_rates_count($prod_data->id);
                     $prd_list['image']=$this->get_product_image($prod_data->id); 
-                     //ASSOCIATIVE products
-                    if($prod_data->product_type == 2)
-                    {  
-                        $prices = $this->config_product_price($prod_data->id); 
-                        $special_ofr_available=$this->get_special_ofr_value($prices,$prod_data->id); 
-                        $prd_ass = AssociatProduct::where('prd_id',$prod_data->id)->where('is_deleted',0)->get();
-                        if(count($prd_ass)>0)
-                        {
-                            foreach($prd_ass as $rows)
-                            {
-                            $product_visibility= Product::where('id',$rows->ass_prd_id)->where('is_active',1)->where('is_deleted',0)->first();
-                            if($product_visibility){
-                            //$associative_prd[]=$this->ass_related_product($rows->ass_prd_id,$lang);
-                            
-                                $associative_prd[]=$this->ass_related_product1($product_visibility->id,$special_ofr_available,$lang,$login);
-                            
-                            
-                             }
-                            }
-                        }
-                        else
-                        {
-                            $associative_prd=[];
-                        }
-                  }
-                  else
-                  {
-                    $associative_prd=[];
-                  }
-				   $variants_list=[];
-				 //Variants List   
-				if($associative_prd){
-					//dd(count($associative_prd));
-					$variants_list = array();
-					foreach($associative_prd as $asso_prod){
-						$attr_value=$asso_prod['attr_value'];
-						$attr_name=$asso_prod['attr_name'];
-						$data['pro_id']=$asso_prod['product_id'];
-						if($asso_prod['sub_attributes']){
-						foreach($asso_prod['sub_attributes'] as $row1){
-						
-						if($attr_value){
-						$data['combination']=$attr_value." ".$attr_name ." - ".$row1['attr_value']." ".$row1['attr_name'];
-						}else{
-						$data['variants']=$row1['attr_value']." ".$row1['attr_name'];
-						}
-						$data['stock']=$row1['stock'];
-						$data['is_out_of_stock']=$row1['is_out_of_stock'];
-						$data['out_of_stock_selling']=$row1['out_of_stock_selling'];
-						$data['min_order_qty']=$asso_prod['min_order'];
-						$data['bulk_order_qty']=$asso_prod['bulk_order'];
-						$data['image']=$row1['image'];
-						$price=$this->get_price($data['pro_id'],$type=2,$login);
-						foreach ($price as $item) {
-							foreach ($item as $key => $value) {
-								$data[$key] = $value;
-							} 
-						}	
-						
-						}
-						}else{
-						    $data['combination']=$attr_value." ".$attr_name;
-						    $data['stock']=$asso_prod['stock'];
-    					    $data['is_out_of_stock']=$asso_prod['is_out_of_stock'];
-    					    $data['out_of_stock_selling']=$asso_prod['out_of_stock_selling'];
-    						$data['min_order_qty']=$asso_prod['min_order'];
-    						$data['bulk_order_qty']=$asso_prod['bulk_order'];
-    						$data['image']=$asso_prod['image'];
-    						$price=$this->get_price($data['pro_id'],$type=2,$login);
-    						foreach ($price as $item) {
-    							foreach ($item as $key => $value) {
-    								$data[$key] = $value;
-    							} 
-    						}
-						    
-						}
-					
-					$variants_list[] = $data;
-					}
-				}    
-
                     
-				  $prd_list['variants_list']=$variants_list;
 				  
-				 // $prd_list['associative_prd']=$associative_prd;
 					
 					$data             =   $prd_list;
                     
@@ -4650,7 +4199,7 @@ class ProductController extends Controller
             else{ $data     =   []; } return $data;
         
     }
-    function viewed_products($prd_id,$lang,$login){
+    function viewed_products($prd_id,$lang,$user){
         $data      =   [];
 	    $prod_data =   Product::where('is_active',1)->where('is_deleted',0)->where('is_approved',1)->where('visible',1)->where('id',$prd_id)->first();
         if($prod_data)   {    
@@ -4660,18 +4209,18 @@ class ProductController extends Controller
                     $prd_list['category_id']=$prod_data->category_id;
                     if($prd_list['category_id']){
 						$category=Category::where('category_id',$prod_data->category_id)->first();
-						$prd_list['is_rating']=$category->is_rating;
+						$prd_list['is_rating']=@$category->is_rating;
 					}else{
 						
 						$prd_list['is_rating']=0;
 					}
-                    $prd_list['category_name']=$this->get_content($prod_data->category->cat_name_cid,$lang);
+                    $prd_list['category_name']=$this->get_content(@$prod_data->category->cat_name_cid,$lang);
                     $prd_list['subcategory_id']=$prod_data->sub_category_id;
-                    $prd_list['subcategory_name']=$this->get_content($prod_data->subCategory->sub_name_cid,$lang);
+                    $prd_list['subcategory_name']=$this->get_content(@$prod_data->subCategory->sub_name_cid,$lang);
                     if($prod_data->brand_id)
                     {
                     $prd_list['brand_id']=$prod_data->brand_id;
-                    $prd_list['brand_name']=$this->get_content($prod_data->brand->brand_name_cid,$lang);
+                    $prd_list['brand_name']=$this->get_content(@$prod_data->brand->brand_name_cid,$lang);
                     }
                     else
                     {
@@ -4686,12 +4235,10 @@ class ProductController extends Controller
                     $prd_list['product_type']='simple';    
 					$prd_list['min_order_qty']=$prod_data->min_order;
 					$prd_list['bulk_order_qty']=$prod_data->bulk_order;	
-						$price=$this->get_price($prod_data->id,$type=1,$login);
-						foreach ($price as $item) {
-							foreach ($item as $key => $value) {
-								$prd_list[$key] = $value;
-							} 
-						}
+						$explore_prd_price=get_crm_price($prod_data,$type=1,$user);
+                        foreach ($explore_prd_price as $key => $value) {
+                        $prd_list[$key] = $value;
+                        } 
 						
 					    $prd_list['stock']=$prod_data->prdStock($prod_data->id);
                         if($prod_data->is_out_of_stock <= 0)
@@ -4716,13 +4263,10 @@ class ProductController extends Controller
                      $prd_list['product_type']='config'; 
                      $prd_list['min_order_qty']="Null";
 					 $prd_list['bulk_order_qty']="Null";
-					 $minprice_prd_id=$this->min_price_product($prod_data->id);
-					 $price=$this->get_price($minprice_prd_id,$type=2,$login);
-                     foreach ($price as $item) {
-							foreach ($item as $key => $value) {
-								$prd_list[$key] = $value;
-							} 
-						}
+					 $explore_prd_price=get_crm_price($prod_data,$type=1,$user);
+                        foreach ($explore_prd_price as $key => $value) {
+                        $prd_list[$key] = $value;
+                        } 
 						
 						$prd_list['stock']=NULL;
                         $prd_list['is_out_of_stock']=NULL;
@@ -4735,91 +4279,8 @@ class ProductController extends Controller
                     $prd_list['rating']=$this->get_rates($prod_data->id);
                     $prd_list['total_reviews']=$this->get_rates_count($prod_data->id);
                     $prd_list['image']=$this->get_product_image($prod_data->id); 
-                     //ASSOCIATIVE products
-                    if($prod_data->product_type == 2)
-                    {  
-                        $prices = $this->config_product_price($prod_data->id); 
-                        $special_ofr_available=$this->get_special_ofr_value($prices,$prod_data->id); 
-                        $prd_ass = AssociatProduct::where('prd_id',$prod_data->id)->where('is_deleted',0)->get();
-                        if(count($prd_ass)>0)
-                        {
-                            foreach($prd_ass as $rows)
-                            {
-                            $product_visibility= Product::where('id',$rows->ass_prd_id)->where('is_active',1)->where('is_deleted',0)->first();
-                            if($product_visibility){
-                            //$associative_prd[]=$this->ass_related_product($rows->ass_prd_id,$lang);
-                            
-                                $associative_prd[]=$this->ass_related_product1($product_visibility->id,$special_ofr_available,$lang,$login);
-                            
-                            
-                             }
-                            }
-                        }
-                        else
-                        {
-                            $associative_prd=[];
-                        }
-                  }
-                  else
-                  {
-                    $associative_prd=[];
-                  }
-				   $variants_list=[];
-				 //Variants List   
-				if($associative_prd){
-					//dd(count($associative_prd));
-					$variants_list = array();
-					foreach($associative_prd as $asso_prod){
-						$attr_value=$asso_prod['attr_value'];
-						$attr_name=$asso_prod['attr_name'];
-						$data['pro_id']=$asso_prod['product_id'];
-						if($asso_prod['sub_attributes']){
-						foreach($asso_prod['sub_attributes'] as $row1){
-						
-						if($attr_value){
-						$data['combination']=$attr_value." ".$attr_name ." - ".$row1['attr_value']." ".$row1['attr_name'];
-						}else{
-						$data['variants']=$row1['attr_value']." ".$row1['attr_name'];
-						}
-						$data['stock']=$row1['stock'];
-						$data['is_out_of_stock']=$row1['is_out_of_stock'];
-						$data['out_of_stock_selling']=$row1['out_of_stock_selling'];
-						$data['min_order_qty']=$asso_prod['min_order'];
-						$data['bulk_order_qty']=$asso_prod['bulk_order'];
-						$data['image']=$row1['image'];
-						$price=$this->get_price($data['pro_id'],$type=2,$login);
-						foreach ($price as $item) {
-							foreach ($item as $key => $value) {
-								$data[$key] = $value;
-							} 
-						}	
-						
-						}
-						}else{
-						    $data['combination']=$attr_value." ".$attr_name;
-						    $data['stock']=$asso_prod['stock'];
-    					    $data['is_out_of_stock']=$asso_prod['is_out_of_stock'];
-    					    $data['out_of_stock_selling']=$asso_prod['out_of_stock_selling'];
-    						$data['min_order_qty']=$asso_prod['min_order'];
-    						$data['bulk_order_qty']=$asso_prod['bulk_order'];
-    						$data['image']=$asso_prod['image'];
-    						$price=$this->get_price($data['pro_id'],$type=2,$login);
-    						foreach ($price as $item) {
-    							foreach ($item as $key => $value) {
-    								$data[$key] = $value;
-    							} 
-    						}
-						    
-						}
-					
-					$variants_list[] = $data;
-					}
-				}    
-
-                    
-				  $prd_list['variants_list']=$variants_list;
+                     
 				  
-				 // $prd_list['associative_prd']=$associative_prd;
 					
 					$data             =   $prd_list;
                     
@@ -4844,13 +4305,13 @@ class ProductController extends Controller
                     $prd_list['product_name']=$this->get_content($prod_data->name_cnt_id,$lang);
                     $prd_list['seller']=$prod_data->Store($prod_data->seller_id)->store_name;
                     $prd_list['category_id']=$prod_data->category_id;
-                    $prd_list['category_name']=$this->get_content($prod_data->category->cat_name_cid,$lang);
+                    $prd_list['category_name']=$this->get_content(@$prod_data->category->cat_name_cid,$lang);
                     $prd_list['subcategory_id']=$prod_data->sub_category_id;
-                    $prd_list['subcategory_name']=$this->get_content($prod_data->subCategory->sub_name_cid,$lang);
+                    $prd_list['subcategory_name']=$this->get_content(@$prod_data->subCategory->sub_name_cid,$lang);
                     if($prod_data->brand_id)
                     {
                     $prd_list['brand_id']=$prod_data->brand_id;
-                    $prd_list['brand_name']=$this->get_content($prod_data->brand->brand_name_cid,$lang);
+                    $prd_list['brand_name']=$this->get_content(@$prod_data->brand->brand_name_cid,$lang);
                     }
                     else
                     {
@@ -4907,7 +4368,7 @@ class ProductController extends Controller
                     $prd_list['seller']=$prod_data->Store($prod_data->seller_id)->store_name;
                     $prd_list['seller_id']=$prod_data->seller_id;
                     $prd_list['category_id']=$prod_data->category_id;
-                    $prd_list['category_name']=$this->get_content($prod_data->category->cat_name_cid,$lang);
+                    $prd_list['category_name']=$this->get_content(@$prod_data->category->cat_name_cid,$lang);
                     $prd_list['subcategory_id']=$prod_data->sub_category_id;
                    // $prd_list['subcategory_name']=$prod_data->get_content($prod_data->subCategory->sub_name_cid);
                     if($prod_data->brand_id)
@@ -5505,9 +4966,9 @@ class ProductController extends Controller
                     $prd_list['product_id']=$row->id;
                     $prd_list['product_name']=$this->get_content($row->name_cnt_id,$lang);
                     $prd_list['category_id']=$row->category_id;
-                    $prd_list['category_name']=$this->get_content($row->category->cat_name_cid,$lang);
+                    $prd_list['category_name']=$this->get_content(@$row->category->cat_name_cid,$lang);
                     $prd_list['subcategory_id']=$row->sub_category_id;
-                    $prd_list['subcategory_name']=$this->get_content($row->subCategory->sub_name_cid,$lang);
+                    $prd_list['subcategory_name']=$this->get_content(@$row->subCategory->sub_name_cid,$lang);
                     if($row->brand_id)
                     {
                     $prd_list['brand_id']=$row->brand_id;
@@ -5572,7 +5033,7 @@ class ProductController extends Controller
                     $prd_list['rating']=$this->get_rates($row->id);
                     if($prd_list['category_id']){
 						$category=Category::where('category_id',$row->category_id)->first();
-						$prd_list['is_rating']=$category->is_rating;
+						$prd_list['is_rating']=@$category->is_rating;
 					}else{
 						
 						$prd_list['is_rating']=0;
@@ -5763,9 +5224,9 @@ class ProductController extends Controller
                     $prd_list['product_id']=$row->id;
                     $prd_list['product_name']=$this->get_content($row->name_cnt_id,$lang);
                     $prd_list['category_id']=$row->category_id;
-                    $prd_list['category_name']=$this->get_content($row->category->cat_name_cid,$lang);
+                    $prd_list['category_name']=$this->get_content(@$row->category->cat_name_cid,$lang);
                     $prd_list['subcategory_id']=$row->sub_category_id;
-                    $prd_list['subcategory_name']=$this->get_content($row->subCategory->sub_name_cid,$lang);
+                    $prd_list['subcategory_name']=$this->get_content(@$row->subCategory->sub_name_cid,$lang);
                     if($row->brand_id)
                     {
                     $prd_list['brand_id']=$row->brand_id;
@@ -5830,7 +5291,7 @@ class ProductController extends Controller
                     $prd_list['rating']=$this->get_rates($row->id);
                     if($prd_list['category_id']){
 						$category=Category::where('category_id',$row->category_id)->first();
-						$prd_list['is_rating']=$category->is_rating;
+						$prd_list['is_rating']=@$category->is_rating;
 					}else{
 						
 						$prd_list['is_rating']=0;
@@ -6006,9 +5467,9 @@ class ProductController extends Controller
                     $prd_list['product_id']=$row->id;
                     $prd_list['product_name']=$this->get_content($row->name_cnt_id,$lang);
                     $prd_list['category_id']=$row->category_id;
-                    $prd_list['category_name']=$this->get_content($row->category->cat_name_cid,$lang);
+                    $prd_list['category_name']=$this->get_content(@$row->category->cat_name_cid,$lang);
                     $prd_list['subcategory_id']=$row->sub_category_id;
-                    $prd_list['subcategory_name']=$this->get_content($row->subCategory->sub_name_cid,$lang);
+                    $prd_list['subcategory_name']=$this->get_content(@$row->subCategory->sub_name_cid,$lang);
                     if($row->brand_id)
                     {
                     $prd_list['brand_id']=$row->brand_id;
@@ -6073,7 +5534,7 @@ class ProductController extends Controller
                     $prd_list['rating']=$this->get_rates($row->id);
                     if($prd_list['category_id']){
 						$category=Category::where('category_id',$row->category_id)->first();
-						$prd_list['is_rating']=$category->is_rating;
+						$prd_list['is_rating']=@$category->is_rating;
 					}else{
 						
 						$prd_list['is_rating']=0;
@@ -6228,7 +5689,370 @@ class ProductController extends Controller
     }
         
 
+public function stores_list(Request $request){
 
-  
+         $lang_id=$request->lang_id;
+        $login=0;
+        $user_id=null;
+        $user = [];
+        
+        $validator=  Validator::make($request->all(),[
+            'device_id' => ['required'],
+            'os_type'=> ['required','string','min:3','max:3'],
+            'page_url'=>['required']
+        ]);
+        if ($validator->fails()) 
+            {    
+              return ['httpcode'=>400,'status'=>'error','message'=>'invalid','data'=>['errors'=>$validator->messages()]];
+            }
+            
+        if($request->post('access_token')){
+            if(!$user = validateToken($request->post('access_token'))){ return invalidToken(); }
+            $login=1;
+            $user_id = $user['user_id'];
+            
+        }
+
+        $crm_branches=CrmBranch::where('DelStatus',0)->orderBy('Branch_Id','DESC')->get();
+     
+        if(count($crm_branches)>0)
+        {
+        foreach($crm_branches as $key)
+        {  
+           $crm_branche_arr['id'] = $key->Branch_Id;
+           $crm_branche_arr['name'] = $key->Branch_Name;
+           $crm_branche_arr['city'] = $key->City;
+           $crm_branche_arr['image'] = url('storage/app/public/crm_stores/no-avatar.png');
+           $crm_stores_array[] = $crm_branche_arr;
+        }
+        }
+        else
+        {
+            $crm_stores_array=[];
+        }
+
+
+           return ['httpcode'=>200,'status'=>'success','page'=>'Home','message'=>'Success','data'=>[
+       
+           'stores'=>$crm_stores_array,
+          
+            ]];
+
+    }
+
+function getIntervals($min, $max, $nbIntervalls) {
+    $max -= $min;  // --------------------------> subtract $min
+    $size = round(($max-1) / $nbIntervalls);
+    $result = [];
+
+    for ($i = 0; $i < $nbIntervalls; $i++) {
+         $inf = $i + $i * $size;
+         $sup = $inf + $size < $max ? $inf + $size: $max;
+
+        $result[]=[$inf + $min, $sup + $min];
+        if($inf >= $max || $sup >= $max)break;
+    }
+    return $result;
+}
+
+public function pricesplit_list(Request $request){
+
+         $lang_id=$request->lang_id;
+        $login=0;
+        $user_id=null;
+        $user = [];
+        
+        $validator=  Validator::make($request->all(),[
+            'device_id' => ['required'],
+            'os_type'=> ['required','string','min:3','max:3'],
+            'page_url'=>['required']
+        ]);
+        if ($validator->fails()) 
+            {    
+              return ['httpcode'=>400,'status'=>'error','message'=>'invalid','data'=>['errors'=>$validator->messages()]];
+            }
+            
+        if($request->post('access_token')){
+            if(!$user = validateToken($request->post('access_token'))){ return invalidToken(); }
+            $login=1;
+            $user_id = $user['user_id'];
+            
+        }
+
+        $min_price = CrmSalesPriceList::where('DelStatus',0)->whereIn('prd_id',function($query) {
+        $query->select('id')->from('prd_products')->where('is_deleted',0)->where('is_active',1);})->where('CustomerTypeId',$user['crm_customer_type'])->where('PriceTypeId',1)->whereDate('FromDate', '<=', date("Y-m-d"))->min('Amount');
+
+        $max_price = CrmSalesPriceList::where('DelStatus',0)->whereIn('prd_id',function($query) {
+        $query->select('id')->from('prd_products')->where('is_deleted',0)->where('is_active',1);})->where('CustomerTypeId',$user['crm_customer_type'])->where('PriceTypeId',1)->whereDate('FromDate', '<=', date("Y-m-d"))->max('Amount');
+
+        $price_range = $this->getIntervals($min_price, $max_price, 5);
+
+
+           return ['httpcode'=>200,'status'=>'success','page'=>'Home','message'=>'Success','data'=>[
+       
+           'price_range'=>$price_range,
+          
+            ]];
+
+    }
+    
+    public function all_occasions(Request $request){
+
+         $lang_id=$request->lang_id;
+        $login=0;
+        $user_id=null;
+        $user = [];
+        
+        $validator=  Validator::make($request->all(),[
+            'device_id' => ['required'],
+            'os_type'=> ['required','string','min:3','max:3'],
+            'page_url'=>['required']
+        ]);
+        if ($validator->fails()) 
+            {    
+              return ['httpcode'=>400,'status'=>'error','message'=>'invalid','data'=>['errors'=>$validator->messages()]];
+            }
+            
+        if($request->post('access_token')){
+            if(!$user = validateToken($request->post('access_token'))){ return invalidToken(); }
+            $login=1;
+            $user_id = $user['user_id'];
+            
+        }
+
+        $occasions=Occasion::where('is_active',1)->where('is_deleted',0)->orderBy('id','DESC')->get();
+     
+        if(count($occasions)>0)
+        {
+        foreach($occasions as $key)
+        {  
+           $occ_arr['id'] = $key->id;
+           $occ_arr['name'] = $this->get_content($key->occasion_name_cid,$lang_id);
+           $occ_arr['image'] = url('public/uploads/storage/app/public/occasions/'.$key->image);
+           $occassions_list[] = $occ_arr;
+        }
+        }
+        else
+        {
+            $occassions_list=[];
+        }
+
+
+           return ['httpcode'=>200,'status'=>'success','page'=>'Home','message'=>'Success','data'=>[
+       
+           'stores'=>$occassions_list,
+          
+            ]];
+
+    }
+    
+    public function coming_soon(Request $request){
+
+         $lang_id=$request->lang_id;
+        $login=0;
+        $user_id=null;
+        $user = [];
+        
+        $validator=  Validator::make($request->all(),[
+            'device_id' => ['required'],
+            'os_type'=> ['required','string','min:3','max:3'],
+            'page_url'=>['required']
+        ]);
+        if ($validator->fails()) 
+            {    
+              return ['httpcode'=>400,'status'=>'error','message'=>'invalid','data'=>['errors'=>$validator->messages()]];
+            }
+            
+        if($request->post('access_token')){
+            if(!$user = validateToken($request->post('access_token'))){ return invalidToken(); }
+            $login=1;
+            $user_id = $user['user_id'];
+            
+        }
+
+             
+        //Coming Soon
+        $comingsoon_product=[];
+        $comingsoon= Product::where('is_active',1)->where('is_deleted',0)->where('is_approved',1)->where('is_comingsoon',1)->where('visible',1)->orderBy('id','DESC')->get();
+          //print_r($prod_data);exit;
+          if(count($comingsoon)>0){
+                foreach($comingsoon as $row){
+      
+                    $coming_prd_list['product_id']=$row->id;
+                    $coming_prd_list['product_name']=$this->get_content($row->name_cnt_id,$lang_id);
+                    $coming_prd_list['category_id']=$row->category_id;
+                    if($coming_prd_list['category_id']){
+                        $category=Category::where('category_id',$row->category_id)->first();
+                        $coming_prd_list['is_rating']=@$category->is_rating;
+                    }else{
+                        
+                        $coming_prd_list['is_rating']=0;
+                    }
+                    $coming_prd_list['category_name']=$row->get_content($row->category->cat_name_cid,$lang_id);
+                    $coming_prd_list['subcategory_id']=$row->sub_category_id;
+                    $coming_prd_list['subcategory_name']=$row->get_content($row->subCategory->sub_name_cid,$lang_id);
+                    if($row->brand_id)
+                    {
+                    $coming_prd_list['brand_id']=$row->brand_id;
+                    $coming_prd_list['brand_name']=$row->get_content(@$row->brand->brand_name_cid,$lang_id);
+                    }
+                    else
+                    {
+                    $coming_prd_list['brand_id']='';
+                    $coming_prd_list['brand_name']='';   
+                    }
+                    //$prd_list['seller']=$row->Store($row->seller_id)->store_name;
+                    //$prd_list['seller_id']=$row->seller_id;
+                     if($row->product_type==1)
+                    {
+                    $coming_prd_list['product_type']='simple';    
+                        
+                        $beverage_prd_price=get_crm_price($row,$type=1,$user);
+                        foreach ($beverage_prd_price as $key => $value) {
+                            $coming_prd_list[$key] = $value;
+                        } 
+                        
+                    }
+                    else
+                    {
+                     $coming_prd_list['product_type']='config'; 
+                     $coming_prd_list['min_order_qty']="Null";
+                     $coming_prd_list['bulk_order_qty']="Null";
+                     $beverage_prd_price=get_crm_price($row,$type=1,$user);
+                        foreach ($beverage_prd_price as $key => $value) {
+                            $coming_prd_list[$key] = $value;
+                        } 
+
+                        
+                    }
+                    $coming_prd_list['shock_sale_price'] = $this->shock_sale_price($row->id);    
+                    $coming_prd_list['short_description']=$row->get_content($row->short_desc_cnt_id,$lang_id);
+                    $coming_prd_list['rating']=$this->get_rates($row->id);
+                    $coming_prd_list['total_reviews']=$this->get_rates_count($row->id);
+                    $coming_prd_list['image']=$this->get_product_image($row->id); 
+   
+
+                    $comingsoon_product[]=$coming_prd_list;
+                    //}
+                }
+
+            }
+            else
+            {
+                $comingsoon_product[]='';
+            }
+
+           return ['httpcode'=>200,'status'=>'success','page'=>'Home','message'=>'Success','data'=>[
+       
+           'comingsoon_products'=>$comingsoon_product,
+          
+            ]];
+
+    }
+
+    public function deals_all(Request $request){
+
+         $lang_id=$request->lang_id;
+        $login=0;
+        $user_id=null;
+        $user = [];
+        
+        $validator=  Validator::make($request->all(),[
+            'device_id' => ['required'],
+            'os_type'=> ['required','string','min:3','max:3'],
+            'page_url'=>['required']
+        ]);
+        if ($validator->fails()) 
+            {    
+              return ['httpcode'=>400,'status'=>'error','message'=>'invalid','data'=>['errors'=>$validator->messages()]];
+            }
+            
+        if($request->post('access_token')){
+            if(!$user = validateToken($request->post('access_token'))){ return invalidToken(); }
+            $login=1;
+            $user_id = $user['user_id'];
+            
+        }
+
+             
+      
+            //Daily Deals
+        $daily_product=[];
+        $daily_deals= Product::where('is_active',1)->where('is_deleted',0)->where('is_approved',1)->where('daily_deals',1)->where('visible',1)->orderBy('id','DESC')->get();
+          //print_r($prod_data);exit;
+          if(count($daily_deals)>0){
+                foreach($daily_deals as $row){
+                    $store_active = Store::where('is_active',1)->where('seller_id',$row->seller_id)->first();
+                   // if($store_active) {
+                    //$prd_list['service_status']=$store_active->service_status;    
+                    $deals_prd_list['product_id']=$row->id;
+                    $deals_prd_list['product_name']=$this->get_content($row->name_cnt_id,$lang_id);
+                    $deals_prd_list['category_id']=$row->category_id;
+                    if($deals_prd_list['category_id']){
+                        $category=Category::where('category_id',$row->category_id)->first();
+                        $deals_prd_list['is_rating']=@$category->is_rating;
+                    }else{
+                        
+                        $deals_prd_list['is_rating']=0;
+                    }
+                    $deals_prd_list['category_name']=$row->get_content($row->category->cat_name_cid,$lang_id);
+                    $deals_prd_list['subcategory_id']=$row->sub_category_id;
+                    $deals_prd_list['subcategory_name']=$row->get_content($row->subCategory->sub_name_cid,$lang_id);
+                    if($row->brand_id)
+                    {
+                    $deals_prd_list['brand_id']=$row->brand_id;
+                    $deals_prd_list['brand_name']=$row->get_content(@$row->brand->brand_name_cid,$lang_id);
+                    }
+                    else
+                    {
+                    $deals_prd_list['brand_id']='';
+                    $deals_prd_list['brand_name']='';   
+                    }
+                    //$prd_list['seller']=$row->Store($row->seller_id)->store_name;
+                    //$prd_list['seller_id']=$row->seller_id;
+                     if($row->product_type==1)
+                    {
+                    $deals_prd_list['product_type']='simple';    
+                      
+                        $beverage_prd_price=get_crm_price($row,$type=1,$user);   
+                        foreach ($beverage_prd_price as $key => $value) {
+                        $deals_prd_list[$key] = $value;
+                        }   
+                    }
+                    else
+                    {
+                     $deals_prd_list['product_type']='config'; 
+                     $deals_prd_list['min_order_qty']="Null";
+                     $deals_prd_list['bulk_order_qty']="Null";
+                    $beverage_prd_price=get_crm_price($row,$type=1,$user);
+                        foreach ($beverage_prd_price as $key => $value) {
+                            $deals_prd_list[$key] = $value;
+                        } 
+                        
+                    }
+                    $deals_prd_list['shock_sale_price'] = $this->shock_sale_price($row->id);    
+                    $deals_prd_list['short_description']=$row->get_content($row->short_desc_cnt_id,$lang_id);
+                    $deals_prd_list['rating']=$this->get_rates($row->id);
+                    $deals_prd_list['total_reviews']=$this->get_rates_count($row->id);
+                    $deals_prd_list['image']=$this->get_product_image($row->id); 
+    
+                    $daily_product[]=$deals_prd_list;
+                    //}
+                }
+
+            }
+            else
+            {
+                $daily_product[]='';
+            }
+
+
+           return ['httpcode'=>200,'status'=>'success','page'=>'Home','message'=>'Success','data'=>[
+       
+           'daily_deals'=>$daily_product,
+          
+            ]];
+
+    }
 	
 }

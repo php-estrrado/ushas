@@ -176,8 +176,9 @@ if (!function_exists('getContent')) {
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($ch, CURLOPT_URL, config('app.upload_url').'/file/upload');
+       
         $postData = array(
-            'file'  =>  base64_encode(file_get_contents(url('storage'.$path.'/'.$fileName))),
+            'file'  =>  base64_encode(file_get_contents(base_path().'/storage'.$path.'/'.$fileName)),
             'path'  =>  $path,   'fileName'  =>  $fileName,
         );
         curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);

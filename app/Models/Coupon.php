@@ -14,7 +14,7 @@ class Coupon extends Authenticatable
 
     protected $fillable = ['org_id', 'cpn_title_cid', 'cpn_desc_cid','category_id','subcategory_id','purchase_type',
 'purchase_number','purchase_amount','ofr_value_type','ofr_value','ofr_type','ofr_code','ofr_min_amount','validity_type',
-'valid_from','valid_to','valid_days','is_active','is_deleted','created_by','user_type','updated_by','created_at','updated_at','image'];
+'valid_from','valid_to','valid_days','is_active','is_deleted','created_by','user_type','updated_by','created_at','updated_at','image','unique_id'];
 
         static function getCoupons($cpn=''){ 
             if($cpn) {

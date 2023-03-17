@@ -136,7 +136,7 @@ class CustomerCreditController extends Controller
                 $rules          =   [
                 'credit_limit'                 =>  ['required','max:100','min:1'],
                 'credit_days'                 =>   ['required','max:100','min:1'],
-                'per_purchase'                 =>  ['required'],
+                // 'per_purchase'                 =>  ['required'],
                 // 'org_image'  =>['mimes:jpeg,jpg,png,gif','required','max:10000']
                 ];
 

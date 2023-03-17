@@ -152,74 +152,75 @@ class CreditsController extends Controller
     public function payment(Request $request)
     {
 
-        //  if($user = validateToken($request->post('access_token')))
-        // {
-        //     $user_id    =   $user['user_id'];
-        //     $formData   =   $request->all(); 
-        //     $rules      =   array();
-        //     $rules['credits_id']    = 'required';
-        //     $rules['transaction_id']    = 'required';
-        //     $rules['status']    = 'required';
-        //     $validator  =   Validator::make($request->all(), $rules);
-        //     if ($validator->fails()) 
-        //         {
-        //             foreach($validator->messages()->getMessages() as $k=>$row){ $error[$k] = $row[0]; $errorMag[] = $row[0]; }  
-        //             return array('httpcode'=>'400','status'=>'error','message'=>$errorMag[0],'data'=>array('errors' =>(object)$error));
-        //         }
-        //     else
-        //         { 
+         if($user = validateToken($request->post('access_token')))
+        {
+            $user_id    =   $user['user_id'];
+            $formData   =   $request->all(); 
+            $rules      =   array();
+            $rules['credits_id']    = 'required';
+            $rules['transaction_id']    = 'required';
+            $rules['status']    = 'required';
+            $validator  =   Validator::make($request->all(), $rules);
+            if ($validator->fails()) 
+                {
+                    foreach($validator->messages()->getMessages() as $k=>$row){ $error[$k] = $row[0]; $errorMag[] = $row[0]; }  
+                    return array('httpcode'=>'400','status'=>'error','message'=>$errorMag[0],'data'=>array('errors' =>(object)$error));
+                }
+            else
+                { 
 
-        //     $credits_id = $request->post('credits_id');
-        //     $transaction_id = $request->post('access_token'); // need to handle once Payment Gateway confirmed
-        //     $status = $request->post('status');
+            $credits_id = $request->post('credits_id');
+            $transaction_id = $request->post('access_token'); // need to handle once Payment Gateway confirmed
+            $status = $request->post('status');
 
-        //     if($status =="paid" || $status =="Paid")
-        //     {
-        //         $credit_table = (new CustomerCredits)->getTable();
-        //         $exp_arr = explode(",", $credits_id); $insId = 0; 
-        //         if(isset($exp_arr))
-        //         {
-        //             foreach($exp_arr as $ek=>$ev)
-        //             {
+            if($status =="paid" || $status =="Paid")
+            {
+                $credit_table = (new CustomerCredits)->getTable();
+                $exp_arr = explode(",", $credits_id); $insId = 0; 
+                if(isset($exp_arr))
+                {
+                    foreach($exp_arr as $ek=>$ev)
+                    {
 
-        //               $tr_info =  CustomerCredits::where('id',$ev)->whereNotIn('ref_id',function($query) use($credit_table,$user_id) {
-        //                 $query->select('ref_id')->from("$credit_table")->where('credit','>',0)->where('user_id',$user_id);})->first();
-        //               $tr_latest_info =  CustomerCredits::where('user_id',$user_id)->orderBy("id","DESC")->first();
+                      $tr_info =  CustomerCredits::where('id',$ev)->whereNotIn('ref_id',function($query) use($credit_table,$user_id) {
+                        $query->select('ref_id')->from("$credit_table")->where('credit','>',0)->where('user_id',$user_id);})->first();
+                      $tr_latest_info =  CustomerCredits::where('user_id',$user_id)->orderBy("id","DESC")->first();
 
-        //               if($tr_info && $tr_latest_info){
-        //                 $pay_arr = [];
-        //                 $pay_arr['user_id'] = $user_id;
-        //                 $pay_arr['ref_id'] = $tr_info->ref_id;
-        //                 $pay_arr['log_id'] = $tr_info->log_id;
-        //                 $pay_arr['credit_limit'] = $tr_latest_info->credit_limit;
-        //                 $pay_arr['credit_days'] = $tr_latest_info->credit_days;
-        //                 $pay_arr['credit'] = $tr_info->debit;
-        //                 $pay_arr['per_purchase'] = $tr_latest_info->per_purchase;
-        //                 $pay_arr['created_by'] = $user_id;
-        //                 $pay_arr['modified_by'] = $user_id;
+                      if($tr_info && $tr_latest_info){
+                        $pay_arr = [];
+                        $pay_arr['user_id'] = $user_id;
+                        $pay_arr['ref_id'] = $tr_info->ref_id;
+                        $pay_arr['log_id'] = $tr_info->log_id;
+                        $pay_arr['credit_limit'] = $tr_latest_info->credit_limit;
+                        $pay_arr['credit_days'] = $tr_latest_info->credit_days;
+                        $pay_arr['credit'] = $tr_info->debit;
+                        $pay_arr['per_purchase'] = $tr_latest_info->per_purchase;
+                        $pay_arr['created_by'] = $user_id;
+                        $pay_arr['modified_by'] = $user_id;
+                        $pay_arr['payment_status'] = "paid";
+                        $insId      =   CustomerCredits::create($pay_arr)->id;  
+                        CustomerCredits::where('id',$ev)->update(["payment_status"=>"paid"]); 
+                      }
 
-        //                 $insId      =   CustomerCredits::create($pay_arr)->id;                        
-        //               }
 
-
-        //             }
-        //         }
-        //         if($insId>0)
-        //         {
-        //             return array('httpcode'=>'200','status'=>'success','message'=>'Payment completed','data'=>['message' =>'Payment completed!']);
-        //         }else{
-        //             return array('httpcode'=>'404','status'=>'error','message'=>'Payment failed');
-        //         }
+                    }
+                }
+                if($insId>0)
+                {
+                    return array('httpcode'=>'200','status'=>'success','message'=>'Payment completed','data'=>['message' =>'Payment completed!']);
+                }else{
+                    return array('httpcode'=>'404','status'=>'error','message'=>'Payment failed');
+                }
                 
-        //     }else{
-        //             return array('httpcode'=>'404','status'=>'error','message'=>'Payment failed');
-        //         }
+            }else{
+                    return array('httpcode'=>'404','status'=>'error','message'=>'Payment failed');
+                }
 
 
 
                     
-        //         }
-        // }else{ return invalidToken(); }
+                }
+        }else{ return invalidToken(); }
 
 
 

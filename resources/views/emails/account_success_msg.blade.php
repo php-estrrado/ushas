@@ -164,7 +164,7 @@
           <tbody><tr>
             <td style="padding-right: 0px;padding-left: 0px;" align="center">
               
-              <img align="center" border="0" src="{{URL::asset('admin/assets/images/email/logo.png')}}" alt="Image" title="Image" style="outline: none;text-decoration: none;-ms-interpolation-mode: bicubic;clear: both;display: inline-block !important;border: none;height: auto;float: none;width: 50%;max-width: 300px;" width="300">
+              <img align="center" border="0" src="{{URL::asset('admin/assets/images/brand/logo.png')}}" alt="Image" title="Image" style="outline: none;text-decoration: none;-ms-interpolation-mode: bicubic;clear: both;display: inline-block !important;border: none;height: auto;float: none;width: 50%;max-width: 300px;" width="300">
               
             </td>
           </tr>
@@ -261,7 +261,7 @@
         <p style="font-size: 14px; line-height: 140%;">&nbsp;</p>
      
         <p style="font-size: 14px; line-height: 140%;">&nbsp;</p>
-        <p style="font-size: 14px; line-height: 140%;"><span style="font-size: 18px; line-height: 25.2px; color: #b3b3b3;">Thanks you for registration. Welcome to BigBasket.</span></p>
+        <p style="font-size: 14px; line-height: 140%;"><span style="font-size: 18px; line-height: 25.2px; color: #b3b3b3;">Thanks you for registration. Welcome to Ushas.</span></p>
           </div>
     
               </td>
@@ -275,7 +275,7 @@
               <td style="overflow-wrap:break-word;word-break:break-word;padding:40px 40px 30px;font-family:"Lato",sans-serif;" align="left">
                 
           <div style="line-height: 140%; text-align: left; word-wrap: break-word;">
-            <p style="font-size: 14px; line-height: 140%;"><span style="color: #888888; font-size: 14px; line-height: 19.6px;"><em><span style="font-size: 16px; line-height: 22.4px;">We are here to help if you need it. Visit the <a href="https://bbbigbasket.com" target="_blank" style="color: #fff"> Bigbasket </a> support for more info</span></em></span><br><span style="color: #888888; font-size: 14px; line-height: 19.6px;"><em><span style="font-size: 16px; line-height: 22.4px;">&nbsp;</span></em></span></p>
+            <p style="font-size: 14px; line-height: 140%;"><span style="color: #888888; font-size: 14px; line-height: 19.6px;"><em><span style="font-size: 16px; line-height: 22.4px;">We are here to help if you need it. Visit the <a href="https://ushas.com" target="_blank" style="color: #fff"> Ushas </a> support for more info</span></em></span><br><span style="color: #888888; font-size: 14px; line-height: 19.6px;"><em><span style="font-size: 16px; line-height: 22.4px;">&nbsp;</span></em></span></p>
           </div>
     
               </td>
@@ -312,7 +312,7 @@
           <div style="line-height: 140%; text-align: left; word-wrap: break-word;">
             <p style="font-size: 14px; line-height: 140%;"><span style="font-size: 16px; line-height: 22.4px; color: #ecf0f1;">Contact</span></p>
         <p style="font-size: 14px; line-height: 140%;"><span style="font-size: 14px; line-height: 19.6px; color: #ecf0f1;">+971 5555 45180</span></p>
-        <p style="font-size: 14px; line-height: 140%;"><span style="font-size: 14px; line-height: 19.6px; color: #ecf0f1;">bigbasket@gmail.com</span></p>
+        <p style="font-size: 14px; line-height: 140%;"><span style="font-size: 14px; line-height: 19.6px; color: #ecf0f1;">ushas@gmail.com</span></p>
           </div>
     
               </td>

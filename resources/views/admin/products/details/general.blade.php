@@ -28,11 +28,11 @@
         </div>
     </div> -->
     <div id="prd_type_div" class="col-lg-6 fl @if($id > 0) d-none @endif ">
-        <!--<div class="form-group">-->
-        <!--    {{Form::label('prd_type','Product Type',['class'=>''])}} <span class="text-red">*</span>-->
-        <!--    {{Form::select('prd_type',$prdTypes,$prdType,['id'=>'prd_type','class'=>'form-control', 'placeholder'=>'Select Product Type'])}}-->
-        <!--    <span class="error"></span>-->
-        <!--</div>-->
+        <div class="form-group">
+            {{Form::label('prd_type','Product Type',['class'=>''])}} <span class="text-red">*</span>-->
+            {{Form::select('prd_type',$prdTypes,$prdType,['id'=>'prd_type','class'=>'form-control', 'placeholder'=>'Select Product Type'])}}-->
+            <span class="error"></span>
+        </div>-->
     </div><div class="clr"></div>
     
     <!--<div id="config_attr_div" class="col-12 no-disp">-->
@@ -91,7 +91,7 @@
     <div class="col-lg-6 fl">
         <div class="form-group">
             {{Form::label('brand_id','Brand',['class'=>''])}} 
-            {{Form::select('prd[brand_id]',$brands,$brandId,['id'=>'brand_id','class'=>'form-control admin', 'placeholder'=>'Select Brand'])}}
+            {{Form::select('prd[brand_id]',$brands,$brandId,['id'=>'brand_id','class'=>'form-control admin','disabled'=>true, 'placeholder'=>'Select Brand'])}}
             <span class="error"></span>
         </div>
     </div>
@@ -181,13 +181,13 @@
             <span class="error"></span>
         </div>
     </div>   
-  <!--   <div class="col-lg-6 fl">
+    <div class="col-lg-6 fl">
         <div class="form-group">
-            {{Form::label('commission','Profit Sharing',['class'=>'daily_deals form-label'])}} 
-            {{Form::number('prd[commission]',$commission,['id'=>'commission', 'class'=>'form-control','placeholder'=>'Profit Sharing','max'=>9999,'min'=>0])}}
+            {{Form::label('points','Points',['class'=>'daily_deals form-label'])}} 
+            {{Form::number('prd[points]',$points,['id'=>'points', 'class'=>'form-control','placeholder'=>'Points','max'=>9999,'min'=>0])}}
         </div>
     </div>
-    <div class="col-lg-6 fl">
+   <!--  <div class="col-lg-6 fl">
         <div class="form-group">
             {{Form::label('commi_type','Commission Type',['class'=>''])}} 
             {{Form::select('prd[commi_type]',['%'=>'%','amount'=>'Amount'],$commi_type,['id'=>'commi_type','class'=>'form-control '])}}

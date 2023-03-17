@@ -74,9 +74,10 @@ class CreditController extends Controller
             $login=1;
 			
 			$user_id=$user['user_id'];
-			//dd($user_id);
+// 			dd($user_id);
         }
 		$creditData = CustomerCredits::where('is_active',1)->where('user_id',$user_id)->orderBY('id','Desc')->get();
+		
 		$credit=0;
 		$debit=0;
 		if($creditData){
@@ -90,7 +91,11 @@ class CreditController extends Controller
 			}
 			
 		}
-		$lastlog=CustomerCreditLogs::whereRaw('id = (select max(`id`) from usr_cust_credits_log)')->where('user_id',$user_id)->first();
+		
+// 		$lastlog=CustomerCreditLogs::whereRaw('id = (select max(`id`) from usr_cust_credits_log)')->where('user_id',$user_id)->first();
+
+        $lastlog=CustomerCreditLogs::where('user_id',$user_id)->where('is_deleted',0)->first();
+		
 		if($lastlog){
 		$data['is_purchase_allow']=$lastlog->allow_purchase;
 		$data['credit_using_per_purchase']=$lastlog->per_purchase;
@@ -137,12 +142,17 @@ class CreditController extends Controller
             
 			if($find_order)
             {
-                $lastlog=CustomerCreditLogs::whereRaw('id = (select max(`id`) from usr_cust_credits_log)')->where('user_id',$user_id)->first();
+                // $lastlog=CustomerCreditLogs::whereRaw('id = (select max(`id`) from usr_cust_credits_log)')->where('user_id',$user_id)->first();
+                
+                $lastlog=CustomerCreditLogs::where('user_id',$user_id)->where('is_deleted',0)->first();
+                
                 if($lastlog){
-                    if($lastlog->per_purchase>= $request->amount){
+                    if($lastlog->per_purchase >= $request->amount){
                 foreach ($get_order as $key => $saldata) {
-                $sale_id=$saldata->id;    
-				$lastlog=CustomerCreditLogs::whereRaw('id = (select max(`id`) from usr_cust_credits_log)')->where('user_id',$user_id)->first();
+                $sale_id=$saldata->id; 
+                
+				// $lastlog=CustomerCreditLogs::whereRaw('id = (select max(`id`) from usr_cust_credits_log)')->where('user_id',$user_id)->first();
+				$lastlog=CustomerCreditLogs::where('user_id',$user_id)->where('is_deleted',0)->first();
 				//dd($user_id);
 				$pay_arr = [];
 				$pay_arr['user_id'] = $user_id;
@@ -241,12 +251,12 @@ class CreditController extends Controller
                         
                 }
                // dd
-               $data['data'] = array("content"=>"Test",'seller_name'=>$seller_name,'username'=>$user_name,'sale_id'=>$order_id);
-                $var = Mail::send('emails.customer_msg_email', $data, function($message) use($data,$user_email) {
-                $message->from(getadmin_mail(),'Bigbasket');    
-                $message->to($user_email);
-                $message->subject('Order Placed ');
-                });
+            //   $data['data'] = array("content"=>"Test",'seller_name'=>$seller_name,'username'=>$user_name,'sale_id'=>$order_id);
+            //     $var = Mail::send('emails.customer_msg_email', $data, function($message) use($data,$user_email) {
+            //     $message->from(getadmin_mail(),'Bigbasket');    
+            //     $message->to($user_email);
+            //     $message->subject('Order Placed ');
+            //     });
         
                 SaleOrder::where('order_id',$order_id)->update(['order_status'=>'pending',
                 'payment_status'=>'paid','updated_at'=>date("Y-m-d H:i:s")]);

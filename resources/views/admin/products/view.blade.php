@@ -18,32 +18,7 @@ if($product){
     $status         =   1;  $featured   = $daily_deals      = 0; $sellerId = $seller->seller_id; $sellCkd = true; $adminCkd = false; $prdAssAttrs = []; $id = 0;
 }
 if($prdType == 2)   {   $conficLi = ''; }else{ $conficLi = 'no-disp'; } 
-if(isset($variationHist)){
-$attr_data = json_decode($variationHist->attr_data);
-$price_data = json_decode($variationHist->price_data);
-$stock_data = json_decode($variationHist->stock_data);
-$sku_data = json_decode($variationHist->sku_data);
-$dynamic_prod_names = json_decode($variationHist->dynamic_prod_names);
 
-if(isset($attr_data)){ $attr_1_name = $attr_data->attr_1; }else{ $attr_1_name = ""; }
-if(isset($attr_data)){ $attr_1_value = $attr_data->attr_1_value; }else{ $attr_1_value = ""; }
-if(isset($attr_data->attr_2)){ $attr_2_name = $attr_data->attr_2; }else { $attr_2_name =""; }
-if(isset($attr_data->attr_2_value)){ $attr_2_value = $attr_data->attr_2_value; }else{ $attr_2_value =""; }
-$attr_price = $price_data; $attr_price= json_decode(json_encode($attr_price), true);
-$attr_stock= $stock_data; $attr_stock= json_decode(json_encode($attr_stock), true);
-$attr_sku = $sku_data; $attr_sku= json_decode(json_encode($attr_sku), true);
-$var_list = $dynamic_prod_names;
-
-}else{
-  $attr_1_name = "";
-$attr_1_value = "";
-$attr_2_name = "";
-$attr_2_value = "";
-$attr_price = "";
-$attr_stock= "";
-$attr_sku = "";
-$var_list = "";  
-}
 ?>
 <div class="page-header">
     <div class="page-leftheader">
@@ -64,7 +39,7 @@ $var_list = "";
                 <div class="tabs-menu mb-4">
                     <ul class="nav panel-tabs">
                         <li><a href="#tab1" data-toggle="tab" id="nav_tab_1" class="active"><span>General Info.</span></a></li>
-                        <li><a href="#tab2" data-toggle="tab" id="nav_tab_2"><span>Price & Tax</span></a></li>
+                        <!-- <li><a href="#tab2" data-toggle="tab" id="nav_tab_2"><span>Price & Tax</span></a></li> -->
                         <li><a href="#tab3" data-toggle="tab" id="nav_tab_3"><span>Media</span></a></li>
                         <!--<li><a href="#tab4" data-toggle="tab" id="nav_tab_4"><span>Attributes</span></a></li>-->
                         <!--
@@ -75,7 +50,7 @@ $var_list = "";
                 <div class="row panel-body tabs-menu-body">
                     <div class="tab-content col-12">
                         @include('admin.products.view.general')
-                        @include('admin.products.view.price_tax')
+                        <!-- @include('admin.products.view.price_tax') -->
                         @include('admin.products.view.image')
                         <!--@include('admin.products.view.attribute')-->
                          @include('admin.products.view.reviews')

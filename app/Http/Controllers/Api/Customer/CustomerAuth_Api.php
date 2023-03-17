@@ -121,7 +121,6 @@ class CustomerAuth_Api extends Controller
                 //         }
                 }
             }
-
           $email = $request->email;
           //return $email;die;
           $random = Str::random(6);
@@ -148,31 +147,6 @@ class CustomerAuth_Api extends Controller
                 $filename='';
             }
 
-            if($request->hasFile('pan_file'))
-            {
-
-            $pan_file=$request->file('pan_file');
-            $extention=$pan_file->getClientOriginalExtension();
-            $pan_filename=time().'.'.$extention;
-            $pan_file->move(('storage/app/public/customer_profile/pan/'),$pan_filename);
-            }
-            else
-            {
-                $pan_filename='';
-            }
-
-            if($request->hasFile('gst_file'))
-            {
-            $gst_file=$request->file('gst_file');
-            $extention=$gst_file->getClientOriginalExtension();
-            $gst_filename=time().'.'.$extention;
-            $gst_file->move(('storage/app/public/customer_profile/gst/'),$gst_filename);
-            }
-            else
-            {
-                $gst_filename='';
-            }
-
            $info = CustomerInfo::create(['org_id' => 1,
            'first_name' => $request->first_name,
            'last_name' =>$request->last_name,
@@ -182,12 +156,7 @@ class CustomerAuth_Api extends Controller
            'is_active'=>1,
            'is_deleted'=>0,
            'created_at'=>date("Y-m-d H:i:s"),
-           'updated_at'=>date("Y-m-d H:i:s")])->id;
-
-           if($pan_filename !="") { CustomerInfo::where('id',$info)->update(['pan_file'=>$pan_filename]); }
-           if($gst_filename !="") { CustomerInfo::where('id',$info)->update(['gst_file'=>$gst_filename]); }
-           if($request->pan_number !="") { CustomerInfo::where('id',$info)->update(['pan_number'=>$request->pan_number]); }
-           if($request->gst_number !="") { CustomerInfo::where('id',$info)->update(['gst_number'=>$request->gst_number]); }
+           'updated_at'=>date("Y-m-d H:i:s")]);
 
           $security = CustomerSecurity::create(['org_id' => 1,
           'password_hash' => Hash::make($request->password),
@@ -237,7 +206,7 @@ class CustomerAuth_Api extends Controller
            $otp=1234;
            $ph_no = '+'.$request->country_code.$request->phone_number;
                 $msg = 'Your code for Registration - OTP: '.$otp.', Do not share this with anyone- '.config('app.name');
-               // $sendOTP_Twilio = twilio_send_otp($ph_no,$msg);
+                $sendOTP_Twilio = twilio_send_otp($ph_no,$msg);
            CustomerRegisterotp::create(['user_id'=>$masterId,'country_code'=>$request->country_code,'phone_number'=>$request->phone_number,'otp'=>$otp,'created_at'=>date('Y-m-d H:i:s')]);
 
         //   $address= CustomerAddress::create(['org_id'=>1,
@@ -278,7 +247,7 @@ class CustomerAuth_Api extends Controller
                 $email = $request->email;
                 $data['data'] = array("content"=>"Test",'user_name'=>$user_name);
                 $var = Mail::send('emails.account_success_msg', $data, function($message) use($data,$email) {
-                $message->from(getadmin_mail(),'Ushas');    
+                $message->from(getadmin_mail(),'BigBasket');    
                 $message->to($email);
                 $message->subject('Registration Success');
                 });
@@ -304,8 +273,90 @@ class CustomerAuth_Api extends Controller
             addNotification($from,$utype,$to,$ntype,$title,$desc,$refId,$reflink,$notify);
         //endnotification
         
-           
-           return response()->json(['httpcode'=>200,'success'=>'OTP sent to your number']);
+            $headers[] = 'Content-Type: application/json';
+            $datapass = json_encode(array(
+                'Customer_Id'=>$masterId,
+                'CustomerName' => $request->first_name,
+                'MobileNo'=> $request->phone_number,
+                'MobileNo1'=> '',
+                'MobileNo2'=> '',
+                'Landline' => '',
+                'EmailID' => $request->email,
+                'CustomerStatus'=>1,
+                'CustomerStatus1'=>'Active',
+                'status'=>'Active',
+                'GSTNomber'=>'',
+                'CustomerAddress'=>'',
+                'CustomerType'=>'',
+                'CustomerCode'=>'',
+                'IndustryName'=>'',
+                'State'=>'',
+                'DistrictName'=>'',
+                'IsNDPApplicable'=>'',
+                'AuthorityApproval'=>'',
+                'Del_Status'=>'',
+                'DivisionName'=>'',
+                'Street'=>'',
+                'City'=>'',
+                'StateName'=>'',
+                'GSTCalculation'=>'',
+                'PINCode'=>'',
+                'Country'=>'',
+                'StateId'=>'',
+                'Country_Id'=>'',
+                'Customer_Type_Id'=>'',
+                'CustomerTypeName'=>'',
+                'BalanceAmount'=>'',
+                'TotalAmount'=>'',
+                'Returnamount'=>'',
+                'CustomerID'=>'',
+                'Company'=>'',
+                'GroupName'=>'',
+                'SubGroupName'=>'',
+                'Owner'=>'',
+                'OwnerContactNo'=>'',
+                'OwnerSocialMediaNo'=>'',
+                'OwnerEmail'=>'',
+                'AccountNo'=>'',
+                'PAN'=>'',
+                'TIN'=>'',
+                'POCDesignation'=>'',
+                'POCContactNo'=>'',
+                'BuildingName'=>'',
+                'Route'=>'',
+                'CustomerPOCName'=>'',
+                'POCSocialMediaNo'=>'',
+                'Website'=>'',
+                'BestTimeToContact'=>'',
+                'Branch'=>'',
+                'CreatedBy'=>'',
+                'CreatedDate'=>'',
+                'RouteId'=>'',
+                'CustomerGroupId'=>'',
+                'CustomerSubGroupId'=>'',
+                'SundryDebtorsId'=>'',
+                'OrganisationID'=>'44',
+                'DivisionId'=>'43'
+            ));
+                $url_cust_reg = config('crm.customer_api');
+            // $url_cust_reg = 'http://20.212.51.46:8081/api/POSUSHAS/USHASCustomerSave';
+            $url_cust_reg = 'http://20.204.113.67:5002/api/POSUSHAS/USHASCustomerSave';
+            $handle = curl_init($url_cust_reg);
+            curl_setopt($handle, CURLOPT_POST, true);
+            curl_setopt($handle, CURLOPT_POSTFIELDS, $datapass);
+            curl_setopt($handle, CURLOPT_HTTPHEADER, $headers);    
+            curl_setopt($handle, CURLOPT_RETURNTRANSFER, true);
+            $response = curl_exec($handle);
+            curl_close($handle);
+            $return_response = json_decode($response, true);
+            
+            if(isset($return_response) && isset($return_response['Data']))
+            {
+                CustomerMaster::where('id',$masterId)->update(['crm_unique_id'=>$return_response['Data']['Customer_Id']]);
+                // print_r($msg); die();
+                // if ($update) Email::sendEmail(geAdminEmail(), $post->email, 'Reset Password', $msg);
+            }
+            return response()->json(['httpcode'=>200,'success'=>'OTP sent to your number']);
 
         }
         return response()->json(['httpcode'=>'400','status'=>'error','error'=>$validator->errors()->all()]);
@@ -359,7 +410,7 @@ class CustomerAuth_Api extends Controller
             return array('httpcode'=>400,'status'=>'error','message'=>'Incorrect password ','data'=>array('errors' =>(object)['error_msg'=>'Incorrect password']));
         }
         }
-        else{ return array('httpcode'=>400,'status'=>'error','message'=>'Invalid Account','data'=>array('errors' =>(object)['error_msg'=>'Invalid Account'])); }
+        else{ return array('httpcode'=>400,'status'=>'error','message'=>'Invalid Account1','data'=>array('errors' =>(object)['error_msg'=>'Invalid Account'])); }
         return ['httpcode'=>400,'status'=>'error','redirect'=>'login','message'=>'Invalid credential','data'=>['errors' =>(object)['error_msg'=>'Invalid credential']]];
         
     }
@@ -681,7 +732,7 @@ class CustomerAuth_Api extends Controller
                      {
                         CustomerRegisterotp::where('country_code',$request->country_code)->where('phone_number',$request->phone_number)->where('otp',$request->otp)->where('is_active',1)->where('is_deleted',0)->update(['status'=>1]);
                         CustomerMaster::where('id',$exist->first()->user_id)->update(['is_active'=>1]);
-                    return ['httpcode'=>200,'status'=>'success','message'=>'OTP verified','data'=>['redirect' =>'registeration','country_code'=>$request->country_code,'phone_number'=>$request->phone_number]];
+                    return ['httpcode'=>200,'status'=>'success','message'=>'OTP verified','data'=>['redirect' =>'registeration','country_code'=>$request->country_code,'phone_number'=>$request->phone_number,'customer_id'=>$exist->first()->user_id]];
                      }
                      else
                      {
@@ -1056,6 +1107,71 @@ class CustomerAuth_Api extends Controller
             }
             }
     }
+    
+    
+    public function kycUpdate(Request $request)
+    {
+            $formData   =   $request->all(); 
+            $rules      =   array();
+            $rules['customer_id']='required|numeric';
+            $rules['pan_file']='required';
+            $rules['gst_file']='required';
+            $rules['pan_number']='required';
+            $rules['gst_number']='required';
+              
+            $validator  =   Validator::make($request->all(), $rules);
+            if ($validator->fails()) 
+                {
+                    foreach($validator->messages()->getMessages() as $k=>$row){ $error[$k] = $row[0]; $errorMag[] = $row[0]; }  
+                    return array('httpcode'=>'400','status'=>'error','message'=>$errorMag[0],'data'=>array('errors' =>(object)$error));
+                }
+            else
+                {   
+                    $master   =  CustomerMaster::where('id',$request->customer_id)->where('is_deleted',0)->first();
+                    if($master)
+                    {
+                        
+                        if($request->hasFile('pan_file'))
+                        {
+                        
+                        $pan_file=$request->file('pan_file');
+                        $extention=$pan_file->getClientOriginalExtension();
+                        $pan_filename=time().'.'.$extention;
+                        $pan_file->move(('storage/app/public/customer_profile/pan/'),$pan_filename);
+                        }
+                        else
+                        {
+                        $pan_filename='';
+                        }
+                        
+                        if($request->hasFile('gst_file'))
+                        {
+                        $gst_file=$request->file('gst_file');
+                        $extention=$gst_file->getClientOriginalExtension();
+                        $gst_filename=time().'.'.$extention;
+                        $gst_file->move(('storage/app/public/customer_profile/gst/'),$gst_filename);
+                        }
+                        else
+                        {
+                        $gst_filename='';
+                        }
+
+                   
+                        if($pan_filename !="") { CustomerInfo::where('user_id',$request->customer_id)->update(['pan_file'=>$pan_filename]); }
+                        if($gst_filename !="") { CustomerInfo::where('user_id',$request->customer_id)->update(['gst_file'=>$gst_filename]); }
+                        if($request->pan_number !="") { CustomerInfo::where('user_id',$request->customer_id)->update(['pan_number'=>$request->pan_number]); }
+                        if($request->gst_number !="") { CustomerInfo::where('user_id',$request->customer_id)->update(['gst_number'=>$request->gst_number]); }
+                        
+                        return array('httpcode'=>'200','status'=>'success','message'=>'KYC Updated','customer_id'=>$request->customer_id,'data'=>['message' =>'KYC Updated']);
+           
+                    }
+                    else
+                    {
+                        return array('httpcode'=>400,'status'=>'error','message'=>'Invalid User');
+                    }
+                }
+       
+    }//end
 
     public function change_password(Request $request)
     {

@@ -20,7 +20,7 @@
     'secret' => NULL,
     'endpoint' => 'api.mailgun.net',
   ),
-  'base_url' => 'http://localhost/ushas',
+  'base_url' => 'https://qa-ushas.estrradoweb.com',
   'm_lang' => 'yes',
   'm_currency' => 'yes',
   'prod_type' => 'from_api',

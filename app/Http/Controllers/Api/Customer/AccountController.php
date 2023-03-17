@@ -75,10 +75,14 @@ use App\Models\CustomerRegisterotp;
 use Mail;
 use Illuminate\Support\Str;
 use Twilio\Rest\Client;
+use App\Models\CustomerPoints;
 
 use App\Models\Country;
 use App\Models\State;
 use App\Models\City;
+use App\Models\crm\{CrmAssortmentMaster, CrmChildProductsMaster, CrmCustomerType,CrmPartAssortmentDetails,
+CrmPartAssortmentMaster,CrmProduct,CrmSalesPriceList,CrmSalesPriceType,CrmSize,CrmBranch,CrmCompany};
+
 class AccountController extends Controller
 {
 
@@ -171,118 +175,29 @@ class AccountController extends Controller
                     {
                     $prd_list['product_type']='simple';    
 						
-						$price=$this->get_price($products->id,$type=1,$login=1);
-						foreach ($price as $item) {
-							foreach ($item as $key => $value) {
-								$prd_list[$key] = $value;
-							} 
-						}	
+						
+					
+                        $wlist_prd_price=get_crm_price($products,$type=1,$user);
+                        foreach ($wlist_prd_price as $key => $value) {
+                        $prd_list[$key] = $value;
+                        } 
+                        
 					}
                     else
                     {
                      $prd_list['product_type']='config'; 
                      //print_r($products->id);
-					 $minprice_prd_id=$this->min_price_product($products->id);
-					$price=$this->get_price($minprice_prd_id,$type=2,$login=1);
-                   foreach ($price as $item) {
-							foreach ($item as $key => $value) {
-								$prd_list[$key] = $value;
-							} 
-						}	
+					 $wlist_prd_price=get_crm_price($products,$type=1,$user);
+                        foreach ($wlist_prd_price as $key => $value) {
+                        $prd_list[$key] = $value;
+                        } 	
 						
 					}
                     $prd_list['shock_sale_price'] = $this->shock_sale_price($products->id);
                     $prd_list['image']=$this->get_product_image($products->id); 
-                     $associative_prd=[];
-                   if($products->product_type == 2)
-                    {  
-                        $prices = $this->config_product_price($products->id); 
-                        $special_ofr_available=$this->get_special_ofr_value($prices,$products->id); 
-                        $prd_ass = AssociatProduct::where('prd_id',$products->id)->where('is_deleted',0)->get();
-                        if(count($prd_ass)>0)
-                        {
-                            foreach($prd_ass as $rows)
-                            {
-                            $product_visibility= Product::where('id',$rows->ass_prd_id)->where('is_active',1)->where('is_deleted',0)->first();
-                            if($product_visibility){
-                            //$associative_prd[]=$this->ass_related_product($rows->ass_prd_id,$lang);
-                           // dd($login);
-                                $associative_prd[]=$this->ass_related_product1($product_visibility->id,$special_ofr_available,$lang,$login);
-                            
-                            
-                             }
-                            }
-                        }
-                        else
-                        {
-                            $associative_prd=[];
-                        }
-                  }
-                  else
-                  {
-                    $associative_prd=[];
-                  } 
+                  
 
-                    
-					 $variants_list=[];
-				 //Variants List   
-				if($associative_prd){
-					//dd(count($associative_prd));
-					$variants_list = array();
-					foreach($associative_prd as $asso_prod){
-						$attr_value=$asso_prod['attr_value'];
-						$attr_name=$asso_prod['attr_name'];
-						$data['pro_id']=$asso_prod['product_id'];
-						if($asso_prod['sub_attributes']){
-						foreach($asso_prod['sub_attributes'] as $row1){
-						
-						if($attr_value){
-						$data['combination']=$attr_value." ".$attr_name ." - ".$row1['attr_value']." ".$row1['attr_name'];
-						}else{
-						$data['variants']=$row1['attr_value']." ".$row1['attr_name'];
-						}
-						$data['stock']=$row1['stock'];
-						$data['is_out_of_stock']=$row1['is_out_of_stock'];
-						$data['out_of_stock_selling']=$row1['out_of_stock_selling'];
-						$data['min_order_qty']=$asso_prod['min_order'];
-						$data['bulk_order_qty']=$asso_prod['bulk_order'];
-						$data['image']=$row1['image'];
-						$price=$this->get_price($data['pro_id'],$type=2,$login);
-						
-						foreach ($price as $item) {
-							foreach ($item as $key => $value) {
-								$data[$key] = $value;
-							} 
-						}	
-						
-						}
-						}else{
-						    $data['combination']=$attr_value." ".$attr_name;
-						    $data['stock']=$asso_prod['stock'];
-    					    $data['is_out_of_stock']=$asso_prod['is_out_of_stock'];
-    					    $data['out_of_stock_selling']=$asso_prod['out_of_stock_selling'];
-    					    if(isset($asso_prod['min_order'])){
-    					 	 $data['min_order_qty']=$asso_prod['min_order'];
-    					    }
-    					     if(isset($asso_prod['bulk_order'])){
-    						  $data['bulk_order_qty']=$asso_prod['bulk_order'];
-    					     }
-    						$data['image']=$asso_prod['image'];
-    						$price=$this->get_price($data['pro_id'],$type=2,$login);
-    						foreach ($price as $item) {
-    							foreach ($item as $key => $value) {
-    								$data[$key] = $value;
-    							} 
-    						}
-						    
-						}
-					
-					$variants_list[] = $data;
-					}
-				}    
-
-                    
-			$prd_list['variants_list']=$variants_list;
+                   
             $val[]=$prd_list;
 
                     }
@@ -719,7 +634,7 @@ class AccountController extends Controller
 		}else{
 			$branches=[];
             $master =  CustomerMaster::where('is_active',1)->where('is_deleted',0)->where('id',$user_id)->first(); 
-			if($master->parent_id==0){
+			if(@$master->parent_id==0){
 				$branch= CustomerBranches::where('is_active',1)->where('is_deleted',0)->where('user_id',$user_id)->get(); 
 				if($branch){
 				foreach($branch as $k=>$row){ 
@@ -730,7 +645,7 @@ class AccountController extends Controller
 					} 
 				}
             }
-        $order_status = ['Accepted'=>'accepted','Ready for pickup'=>'pickup','Delivered'=>'delivered','Rejected'=>'rejected'];
+        $order_status = ['Pending'=>'pending','Cancelled'=>'cancelled','Delivered'=>'delivered','Returned'=>'rejected'];
         $years = SaleOrder::select(DB::raw('YEAR(created_at) as year'))->distinct()->pluck('year');
         $branches=$branches;
 		//return $years; 
@@ -1012,7 +927,7 @@ class AccountController extends Controller
                     //     $crv=1;
                     //     $currency = getCurrency()->name;
                     // } 
-                    $sales =  SalesOrder::where('cust_id',$user_id)->where('id',$formData['sale_id'])->first(); 
+                    $sales =  SalesOrder::where('cust_id',$user_id)->where('id',$formData['sale_id'])->first(); //dd($sales);
                     if($sales)
                     {
                         $pay      =   SalesOrderPayment::where('sales_id',$request->sale_id)->first();
@@ -1023,29 +938,10 @@ class AccountController extends Controller
                         $currency = getCurrency()->name;
                         }    
                         $ship     =   SalesOrderShippingStatus::where('sales_id',$request->sale_id)->first();
-                        /*$histories =  AuctionHist::where('user_id',$user_id)->where('sale_id',$request->sale_id)->where('is_deleted',0)->where('is_active',1)->orderBy('created_at', 'desc');
-                        $auctionwin = Auction::where('bid_allocated_to',$user_id)->where('sale_id',$request->sale_id)->where('status','closed')->where('is_deleted',0)->where('is_active',1);
-                        if($histories->count() > 0)
-                        {
-                            if($auctionwin->count() > 0)
-                            {
-                                $au_status=   'True';
-                                $charge    =   $sales->bid_charge;
-                            }
-                            else
-                            {
-                                $au_status=   'False';
-                                $charge    =   0;
-                            }
-                        }
-                        else
-                        {
-                            $au_status =   'False';
-                            $charge    =   0;
-                        }*/
+                       
                         $ord      =   SalesOrderCancel::where('sales_id',$sales->id)->orderBy('created_at', 'desc')->first();
                         $data['cust_id']           =   $user_id;
-                        //$data['seller_id']           =   $sales->seller_id;
+                        $data['seller_id']           =   $sales->seller_id;
                         $chat= Chat::where('seller_id',$sales->seller_id)->where('created_by',$user_id)->where('is_deleted',0)->first();  
                         if($chat)
                         {   
@@ -1113,12 +1009,18 @@ class AccountController extends Controller
 							
 							$prdId      =   $items->prd_id;
                             $products   =   Product::where('id',$prdId)->first();
-                          
+                            
+                            if($products->crmProduct->Colour)
+                            {
+                            $prd['colour'] = $products->crmProduct->Colour->ColourName;
+                            }else{
+                            $prd['colour'] = "";
+                            }
                             $prd['sale_items_id']     =   $items->id;
                             $prd['product_id']        =   $prdId;
 							if($products->category_id){
 								$category=Category::where('category_id',$products->category_id)->first();
-								$prd['is_rating']=$category->is_rating;
+								$prd['is_rating']=@$category->is_rating;
 							}else{
 								
 								$prd['is_rating']=0;
@@ -1133,24 +1035,59 @@ class AccountController extends Controller
                             else
                             {
                                 $prd['product_type']      = "config";
-                                $associate= AssociatProduct::where('ass_prd_id',$items->prd_id)->first();
-                                $prd['visible_product_id']=$associate->prd_id;
-								$prd_assoc = Product::where('id',$associate->prd_id)->first();
+                                
+								$prd_assoc = Product::where('id',$items->prd_id)->first();
                                 $prd['product_name']      =   $this->get_content($prd_assoc->name_cnt_id,$lang);
                                 $prd['product_image']     =   $this->get_product_image($prd_assoc->id);
-								$options=SalesOrderItemOption::where('sales_item_id',$items->id)->get();
 								
-								if(count($options)>0){
-									//dd(count($options));
-									if(isset($options[0]) && isset($options[1])){
-										$prd['variant_name']=$options[0]->attr_value." ".$options[0]->attr_name. " - ".$options[1]->attr_value." ".$options[1]->attr_name;
-										}else{
-										//dd($options)	;
-										$prd['variant_name']=$options[0]->attr_value." ".$options[0]->attr_name;    
-										}
+								
+								   $prd['is_custom']      = $items->is_custom;
+								  
+								$item_count = 0;
+								$child_data = json_decode($items->assortments,true);
+								if(count($child_data) >0){
+                                    foreach($child_data as $cust_key=>$cust_val)
+                                    {
+                                    
+                                    $child_id = $cust_val['child_product_id']; $child_qty = $cust_val['child_product_qty'];  $child_assortment_qty =$cust_val['child_assortment_qty'];
+                                    $child_data = CrmChildProductsMaster::where('ChildProductID',$child_id)->first();
+                                    if(isset($child_data->SizeInfo)){ $size_name = $child_data->SizeInfo->SizeName;}else{ $size_name = ""; }
+                                    $child_detail['size'] = $size_name;
+                                    $child_detail['quantity'] = $child_qty;
+                                    $item_count+= $child_qty;
+                                    $child_datails[]=$child_detail;
+                                    
+                                    }
+                                   if($child_assortment_qty>0){ $item_count = $item_count*$child_assortment_qty; }
+                                    $prd['child_datails']     =   $child_datails;
 								}else{
-								  $prd['variant_name']="";  
+								    $prd['child_datails']     =   [];
+								    $child_assortment_qty =0;
 								}
+								
+								$prd['child_assortment_qty'] = $child_assortment_qty;
+								$crm_product_id = $prd_assoc->crmProduct->id;
+								$prd_assort = CrmPartAssortmentMaster::where('productID',$crm_product_id)->where('AssortmentID',$items->assortments_id)->where('is_deleted',0)->first();
+								
+								if($prd_assort)
+                                {
+                                    $prd['assortment'] = $prd_assort->Assortments->Assortment;
+                                }else{
+                                    $prd['assortment'] = "Custom";
+                                }
+								// $options=SalesOrderItemOption::where('sales_item_id',$items->id)->get();
+								
+								// if(count($options)>0){
+								// 	//dd(count($options));
+								// 	if(isset($options[0]) && isset($options[1])){
+								// 		$prd['variant_name']=$options[0]->attr_value." ".$options[0]->attr_name. " - ".$options[1]->attr_value." ".$options[1]->attr_name;
+								// 		}else{
+								// 		//dd($options)	;
+								// 		$prd['variant_name']=$options[0]->attr_value." ".$options[0]->attr_name;    
+								// 		}
+								// }else{
+								//   $prd['variant_name']="";  
+								// }
 							}
                             
                             $tot_price = $items->row_total;
@@ -1216,7 +1153,7 @@ class AccountController extends Controller
 							
                            $data['grand_total']       =   number_format($sales->g_total,2);
                         
-                         $data['item_count']=   count($data['products']);
+                         $data['item_count']= $item_count;//  count($data['products']);
                          //$data['auction_status']=   $au_status;
                          //$data['bid_charge']    =   $charge;
                          $adddr   =   SalesOrderAddress::where('sales_id',$request->sale_id)->first();
@@ -1860,7 +1797,8 @@ class AccountController extends Controller
                         $data['invite_count']       = $i_count;
 						$data['wallet']       = $this->wallet_balance($user_id);
 						$data['credits']       = $this->credit_balance($user_id);
-						$data['loyalty_points']       = $this->loyalty_points($user_id);
+						$data['customer_points']       = $this->customer_points($user_id);
+						$data['is_kyc_completed']       = $this->kyc_status($user_id);
                         $val[] = $data;
                     }
                     else
@@ -1882,29 +1820,67 @@ class AccountController extends Controller
 			return 0;
 		}
 	}
+
+	public function kyc_status($user_id){
+		$info = CustomerInfo::where('user_id',$user_id)->where('is_deleted',0)->first();
+		if($info)
+		{
+			
+			if($info->pan_number !="" && $info->pan_file !="" && $info->gst_number !="" && $info->gst_file !="" )
+			{
+				return 1;
+			}else{
+				return 0;
+			}
+		}
+		else
+		{
+			return 0;
+		}
+	}
+	
 	public function credit_balance($user_id){
 		$creditData = CustomerCredits::where('is_active',1)->where('user_id',$user_id)->orderBY('id','Desc')->get();
 		$credit=0;
 		$debit=0;
 		$balance=0;
-		if($creditData){
-			
-			foreach($creditData as $row){
-				
+
+		if($creditData)
+        {			
+			foreach($creditData as $row)
+            {				
 				$credit+= $row->credit;
 				$debit+= $row->debit;
 			}
-			
-		
-		$lastlog=CustomerCreditLogs::where('user_id',$user_id)->orderBy("id","DESC")->first();
-		if($lastlog){
-		$data['total_limit']=$lastlog->credit_limit;
-		$balance=($data['total_limit']-$debit)+$credit;
-		}
+
+		    $lastlog=CustomerCreditLogs::where('user_id',$user_id)->orderBy("id","DESC")->first();
+            
+		    if($lastlog)
+            {
+		        $data['total_limit']=$lastlog->credit_limit;
+		        $balance=($data['total_limit']-$debit)+$credit;
+		    }
 		}
 		
 		return $balance;
 	}
+
+    public function customer_points($user_id){
+		$data['log'] = CustomerPoints::where('user_id',$user_id)->where('is_deleted',0)->get();
+		$credit=0;
+		$debit=0;
+		$balance=0;
+		if($data['log']){
+			foreach($data['log'] as $log){
+				$credit+= $log->credit;
+				$debit+= $log->debit;
+			}
+		}
+		$balance=$credit-$debit;
+		
+		return $balance;
+	}
+	
 	public function loyalty_points($user_id){
 		$data['log']=LogLoyaltyPoints::where('user_id',$user_id)->where('is_deleted',0)->get();
 		$credit=0;

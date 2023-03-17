@@ -30,7 +30,7 @@
 								<div class="btn btn-list">
 									<!-- <a href="#" class="btn btn-info"><i class="fe fe-settings mr-1"></i> General Settings </a>
 									<a href="#" class="btn btn-danger"><i class="fe fe-printer mr-1"></i> Print </a> -->
-									<a href="{{ url('/admin/brands/create') }}"   class="btn btn-primary addmodule"><i class="fe fe-plus mr-1"></i> Add New</a>
+									<!--<a href="{{ url('/admin/brands/create') }}"   class="btn btn-primary addmodule"><i class="fe fe-plus mr-1"></i> Add New</a>-->
 								</div>
 							</div>
 						</div>
@@ -67,7 +67,7 @@
 																	<th class="border-bottom-0 w-15">Created On</th>
 																	<th class="border-bottom-0 w-15 notexport">Status</th>
 																	<th class="border-bottom-0 w-30 hide_column" style"display:none;">Status</th>														
-																	<th class="border-bottom-0 w-20 notexport">Actions</th>
+																	<!--<th class="border-bottom-0 w-20 notexport">Actions</th>-->
 																</tr>
 															</thead>
 
@@ -116,7 +116,7 @@
 																	@endif
 																	</td>
 																	
-																	<td class="align-middle">
+																<?php /* ?>	<td class="align-middle">
 																		<div class="btn-group align-top">
 																			@if(checkPermission('/admin/brands','edit') == true)
 																			<a href="{{ url('admin/brands/edit/') }}/{{$row['id']}}"   class="mr-2 btn btn-info btn-sm editmodule"><i class="fe fe-edit mr-1"></i> Edit</a>
@@ -125,7 +125,7 @@
 																			<button  class="btn btn-secondary btn-sm deletemodule" id="deletemodule-{{$row['id']}}" type="button"><i class="fe fe-trash-2 mr-1"></i>Delete</button>
 																			@endif
 																		</div>
-																	</td>
+																	</td> <?php */ ?>
 																</tr>
 																     @endforeach
                 @endif

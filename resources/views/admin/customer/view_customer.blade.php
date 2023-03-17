@@ -39,10 +39,11 @@
 						<!--/app header-->
 						<div class="main-proifle">
 							<div class="row">
-								<div class="col-lg-8">
+								<div class="col-lg-7">
 									<div class="box-widget widget-user">
 										<div class="widget-user-image1 d-sm-flex">
-										    @if($info->profile_image!='')
+										    <!--@if($info->profile_image!='')-->
+										    @if(isset($info->profile_image))
 										    <img alt="User Avatar" class="rounded-circle border p-0" style="width:128px;height:128px;" src="{{ config('app.storage_url').'/app/public/customer_profile/'.$info->profile_image }}">
 										    @else
 											<img alt="User Avatar" class="rounded-circle border p-0" src="{{URL::asset('admin/assets/images/users/2.jpg')}}">
@@ -71,7 +72,7 @@
 										</div>
 									</div>
 								</div>
-								<div class="col-lg-4 col-md-auto">
+								<div class="col-lg-5 col-md-auto">
 									<div class="text-lg-right btn-list mt-4 mt-lg-0">
 										<!--<a href="#" class="btn btn-light">Change Password</a>-->
 										<!-- <button data-toggle="modal" data-target="#SignUp" class="btn btn-primary">Edit Profile</button> -->
@@ -108,7 +109,7 @@
 											<!--		</div>-->
 											<!--	</div>-->
 											<!--</div>-->
-											<div class="media col-sm-8">
+											<div class="media col-sm-4">
 												<div class="media-icon bg-info text-white mr-1 mt-1">
 													<i class="fa fa-briefcase fs-18"></i>
 												</div>
@@ -117,6 +118,21 @@
 													<div class="font-weight-bold number-font">
 													{{$currency}} {{round($sale_amt)}}
 													
+													</div>
+												</div>
+											</div>
+											<div class="media col-sm-4">
+												<div class="media-icon bg-info text-white mr-1 mt-1">
+													<i class="fa fa-money fs-18"></i>
+												</div>
+												<div class="media-body">
+													<small class="text-muted">Points</small>
+													<div class="font-weight-bold number-font">
+														@if(!empty($customer_points))
+															{{$customer_points}}
+														@else
+															{{0}}
+														@endif
 													</div>
 												</div>
 											</div>
@@ -160,8 +176,8 @@
 																 @if($address->address_1)<span><b>Street:</b> {{ $address->address_1}}</span><br>@endif
 																@if($address->address_2)<span><b>House/Apartment:</b> {{ $address->address_2}}</span><br>@endif
 																@if(getCities($address->city_id)) <span><b>City:</b> {{ getCities($address->city_id)['city']}}</span><br>@endif
-																@if(getCities($address->city_id)) <span><b>State:</b> {{ getCities($address->city_id)['state']}}</span><br>@endif
-																@if(getCities($address->city_id)) <span><b>Country:</b> {{ getCities($address->city_id)['country']}}</span><br>@endif
+																@if(getCities($address->city_id)) <span><b>State:</b> @if(isset(getCities($address->city_id)['state'])){{ getCities($address->city_id)['state']}}@endif</span><br>@endif
+																@if(getCities($address->city_id)) <span><b>Country:</b> @if(isset(getCities($address->city_id)['country'])){{ getCities($address->city_id)['country']}}@endif</span><br>@endif
 
 															@if($address->pincode)<span><b>Pincode:</b> {{ $address->pincode}}</span><br>@endif
 																

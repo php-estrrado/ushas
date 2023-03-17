@@ -279,10 +279,12 @@ if (!function_exists('get_crm_price')){
        
        if(isset($user['crm_customer_type']))
        {
-
+        
             // $crm_price = $prdid->crmProduct->prdPrice;
+        if($prdid->crmProduct){
+
             $crm_price = CrmSalesPriceList::where('DelStatus',0)->where('Part_id',$prdid->crmProduct->id)->where('CustomerTypeId',$user['crm_customer_type'])->where('PriceTypeId',1)->whereDate('FromDate', '<=', date("Y-m-d"))->first();
-           
+           // dd($crm_price);
             if($crm_price)
             {
                 $price['actual_price'] = $crm_price->Amount;
@@ -296,16 +298,58 @@ if (!function_exists('get_crm_price')){
                 }
                 
             }else{
-                $price['actual_price'] = "";
+                $price['actual_price'] = 0;
                 $price['offer'] = "";
                 $price['offer_price'] = "";
             }
-      
+      }else{
+                $price['actual_price'] = 0;
+                $price['offer'] = "";
+                $price['offer_price'] = "";
+            }
 
             return $price;
        }else{
 
-            $price['actual_price'] = "";
+            $price['actual_price'] = 0;
+            $price['offer'] = "";
+            $price['offer_price'] = "";
+        return $price;
+       }
+
+    }
+}
+
+if (!function_exists('child_crm_price')){
+     function child_crm_price($prdid,$type,$user){ 
+       
+       if(isset($user['crm_customer_type']))
+       {
+        
+            $crm_price = CrmSalesPriceList::where('DelStatus',0)->where('Part_id',$prdid)->where('CustomerTypeId',$user['crm_customer_type'])->where('PriceTypeId',1)->whereDate('FromDate', '<=', date("Y-m-d"))->first();
+           // dd($crm_price);
+            if($crm_price)
+            {
+                $price['actual_price'] = $crm_price->Amount;
+                $price['offer'] = $crm_price->DiscountPercentage;
+                if($crm_price->DiscountPercentage >0)
+                {
+                $dicountprice = $crm_price->Amount - ($crm_price->Amount*($crm_price->DiscountPercentage/100));
+                $price['offer_price'] = $dicountprice;   
+                }else{
+                $price['offer_price'] = ""; 
+                }
+                
+            }else{
+                $price['actual_price'] = 0;
+                $price['offer'] = "";
+                $price['offer_price'] = "";
+            }
+     
+            return $price;
+       }else{
+
+            $price['actual_price'] = 0;
             $price['offer'] = "";
             $price['offer_price'] = "";
         return $price;

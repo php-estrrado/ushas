@@ -185,11 +185,19 @@ Route::post('/admin/editor-image', [App\Http\Controllers\Admin\SellerProductCont
 Route::post('/admin/modules/sort-order', [App\Http\Controllers\Admin\ModulesController::class, 'sort_order'])->name('modules.sort-order');
 
 Route::get('/admin/banners', [App\Http\Controllers\Admin\BannerController::class, 'banners'])->name('admin.banners');
-Route::get('/admin/banners/create', [App\Http\Controllers\Admin\BannerController::class, 'createBanner'])->name('shocking_sales.create');
+Route::get('/admin/banners/create', [App\Http\Controllers\Admin\BannerController::class, 'createBanner'])->name('banner.create');
 Route::post('/admin/banners/save', [App\Http\Controllers\Admin\BannerController::class, 'saveBanner']);
 Route::post('/admin/banners/status', [App\Http\Controllers\Admin\BannerController::class, 'BannerStatus']);
 Route::post('/admin/banners/delete', [App\Http\Controllers\Admin\BannerController::class, 'BannerDelete']);
 Route::get('/admin/banners/edit/{id}', [App\Http\Controllers\Admin\BannerController::class, 'editBanner'])->name('banners.edit');
+
+//Delivery
+Route::get('/admin/delivery', [App\Http\Controllers\Admin\DeliveryController::class, 'delivery'])->name('admin.delivery');
+Route::get('/admin/delivery/create', [App\Http\Controllers\Admin\DeliveryController::class, 'createDelivery'])->name('delivery.create');
+Route::post('/admin/delivery/save', [App\Http\Controllers\Admin\DeliveryController::class, 'saveDelivery']);
+Route::post('/admin/delivery/status', [App\Http\Controllers\Admin\DeliveryController::class, 'DeliveryStatus']);
+Route::post('/admin/delivery/delete', [App\Http\Controllers\Admin\DeliveryController::class, 'DeliveryDelete']);
+Route::get('/admin/delivery/edit/{id}', [App\Http\Controllers\Admin\DeliveryController::class, 'editDelivery'])->name('delivery.edit');
 
 //support customer
 Route::get('/admin/customer/support/', [App\Http\Controllers\Admin\SupportCustomer::class, 'list']);
@@ -231,7 +239,7 @@ Route::post('/admin/currency/status', [App\Http\Controllers\Admin\CurrencyContro
 
 //Currency
 Route::get('admin/labels', [App\Http\Controllers\Admin\LabelController::class, 'list'])->name('labels.list');
-Route::post('admin/labels', [App\Http\Controllers\Admin\LabelController::class, 'list'])->name('labels.list');
+Route::post('admin/labels', [App\Http\Controllers\Admin\LabelController::class, 'list'])->name('post_labels.list');
 Route::get('admin/new-label', [App\Http\Controllers\Admin\LabelController::class, 'create']);
 Route::post('admin/label/validate', [App\Http\Controllers\Admin\LabelController::class, 'validateLabel']);
 Route::post('admin/label/save', [App\Http\Controllers\Admin\LabelController::class, 'saveLabel']);
@@ -243,19 +251,6 @@ Route::post('admin/label/delete', [App\Http\Controllers\Admin\LabelController::c
 Route::get('admin/loyalty-points/settings', [App\Http\Controllers\Admin\LoyaltyController::class, 'loyalty']);
 Route::post('admin/loyalty/validate', [App\Http\Controllers\Admin\LoyaltyController::class, 'validateLoyalty']);
 Route::post('admin/loyalty/save', [App\Http\Controllers\Admin\LoyaltyController::class, 'saveLoyalty']);
-
-Route::get('admin/loyalty-rewards', [App\Http\Controllers\Admin\LoyaltyController::class, 'loyalty_rewards'])->name('loayalty-reward.list');
-Route::post('admin/loyalty-rewards', [App\Http\Controllers\Admin\LoyaltyController::class, 'loyalty_rewards'])->name('loayalty-reward.list');
-Route::post('admin/loyalty-reward/validate', [App\Http\Controllers\Admin\LoyaltyController::class, 'validateLoyaltyReward']);
-Route::post('admin/loyalty-reward/save', [App\Http\Controllers\Admin\LoyaltyController::class, 'saveLoyaltyReward']);
-Route::get('admin/loyalty-reward/edit/{id}', [App\Http\Controllers\Admin\LoyaltyController::class, 'editLoyaltyReward']);
-Route::post('admin/loyalty-reward/delete', [App\Http\Controllers\Admin\LoyaltyController::class, 'deleteLoyaltyReward']);
-Route::get('admin/customer-loyalty-points', [App\Http\Controllers\Admin\LoyaltyController::class, 'customerLoyaltyPoints'])->name('loyalty-customer.list');
-Route::post('admin/customer-loyalty-points', [App\Http\Controllers\Admin\LoyaltyController::class, 'customerLoyaltyPoints'])->name('loyalty-customer.list');
-Route::get('admin/loyalty-log/{id}', [App\Http\Controllers\Admin\LoyaltyController::class, 'customerLoyaltyLog']);
-Route::get('admin/customer-loyalty-reward/{id}', [App\Http\Controllers\Admin\LoyaltyController::class, 'customerLoyaltyReward']);
-Route::post('admin/loyalty-reward/status', [App\Http\Controllers\Admin\LoyaltyController::class, 'changeStatus']);
-
 
 
 Route::post('admin/category/content', [App\Http\Controllers\Admin\CategoryController::class, 'catContent']);

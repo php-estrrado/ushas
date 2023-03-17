@@ -10,5 +10,5 @@ class CartHistory extends Model
     use HasFactory;
     protected $table = 'usr_cart_activity_hist';
     protected $fillable = [
-        'org_id','user_id','product_id','quantity','action','is_active','is_deleted','created_by','updated_by','created_at','updated_at'];
+        'org_id','user_id','product_id','quantity','action','is_active','is_deleted','created_by','updated_by','created_at','updated_at','assortment_id','crm_product_id','prd_assign_id'];
 }

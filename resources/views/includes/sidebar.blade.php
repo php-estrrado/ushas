@@ -1,13 +1,13 @@
 @php 
     if(auth()->user()->avatar == NULL){ $avatar = url('storage/app/public/no-avatar.png'); }
-    else{ $avatar = url('storage'.auth()->user()->avatar); }
+    else{ $avatar = config('app.url').'/storage'.auth()->user()->avatar; }
     $sidebar = sidebarMenu();
     $version = appVersion('admin');
 	
 @endphp
 <aside class="app-sidebar">
         <div class="app-sidebar__logo">
-                <a class="header-brand" href="{{url('/')}}">
+                <a class="header-brand" href="{{url('/')}}" data-u="{{ config('app.url') }}">
                         <img src="{{URL::asset(config('settings.logo'))}}" class="header-brand-img desktop-lgo" alt="Admintro logo">
                 </a>
         </div>

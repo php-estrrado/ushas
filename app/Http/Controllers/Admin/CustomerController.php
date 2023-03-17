@@ -24,6 +24,7 @@ use App\Models\CustomerInfo;
 use App\Models\CustomerSecurity;
 use App\Models\CustomerTelecom;
 use App\Models\CustomerAddress;
+use App\Models\CustomerPoints;
 use App\Rules\Name;
 use App\Models\Reward;
 use App\Models\CustomerWallet_Model;
@@ -50,7 +51,16 @@ class CustomerController extends Controller
         }
         else
         {
-        $data['customer']           =    CustomerMaster::where('is_deleted',NULL)->orWhere('is_deleted',0)->orderBy('id','DESC')->get();    
+        $data['customer'] = DB::table('usr_mst')
+            ->join('usr_info', 'usr_mst.id', '=', 'usr_info.user_id')
+            ->join('usr_telecom', 'usr_mst.id', '=', 'usr_telecom.user_id')
+            ->where('usr_mst.is_deleted',NULL)->orWhere('usr_mst.is_deleted',0)
+            ->where('usr_telecom.is_deleted',NULL)->orWhere('usr_telecom.is_deleted',0)->where('usr_telecom.usr_telecom_typ_id',2)
+            ->select('usr_mst.*','usr_info.*', 'usr_telecom.*')
+            ->orderBy('usr_mst.id','DESC')
+            ->get();
+            // dd($data);
+        // $data['customer']           =    CustomerMaster::where('is_deleted',NULL)->orWhere('is_deleted',0)->orderBy('id','DESC')->get();
         }
         
         $data['countries']          =    Country::all();
@@ -386,6 +396,7 @@ $customer=CustomerMaster::where('ref_code',$ref_code)->first();
         $data['sale_amt']           =    SaleOrder::whereNotIn('order_status',['initiated'])->where('cust_id',$user_id)->sum('g_total'); 
         $data['order_cancel']       =    SaleOrder::where('cust_id',$user_id)->where('order_status','cancelled')->count();
         $data['order_refund']       =    SaleOrder::where('cust_id',$user_id)->where('order_status','refund')->count();
+        $data['customer_points']    =    CustomerPoints::where('user_id',$user_id)->where('is_deleted','0')->selectRaw('SUM(credit) - SUM(debit) as bal')->first()->bal;
         // dd($data);
         return view('admin.customer.view_customer', $data);
     }
@@ -521,20 +532,20 @@ $customer=CustomerMaster::where('ref_code',$ref_code)->first();
             'Latitude'=>'',
             'Longitude'=>'',
         ));
-           $url_cust_reg = config('crm.customer_api');
-           $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL,$url_cust_reg);
-            curl_setopt($ch, CURLOPT_POST, 1);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $datapass);           
-           // curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-            $response = curl_exec($ch);
-            $err = curl_error($ch);
-            $statusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+           // $url_cust_reg = config('crm.customer_api');
+           // // $ch = curl_init();
+           // //  curl_setopt($ch, CURLOPT_URL,$url_cust_reg);
+           // //  curl_setopt($ch, CURLOPT_POST, 1);
+           // //  curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+           // //  curl_setopt($ch, CURLOPT_POSTFIELDS, $datapass);           
+           // // // curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+           // //  $response = curl_exec($ch);
+           // //  $err = curl_error($ch);
+           // //  $statusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             
-            curl_close($ch);
-            return $err;die;
-            $return_response = json_decode($response);
+           // //  curl_close($ch);
+           // //  return $err;die;
+           // //  $return_response = json_decode($response);
             
             
             CustomerMaster::where('id',$user_id)->update(['crm_unique_id'=>$return_response->data->Customer_Id,'customer_code'=>$return_response->data->CustomerCode]);
@@ -627,69 +638,69 @@ $customer=CustomerMaster::where('ref_code',$ref_code)->first();
         {
 
 
-           $headers[] = 'Content-Type: application/json';
-            if(authenticateOdoo()){
-              $headers[] = 'Cookie: '.authenticateOdoo();  
-            }
+           // $headers[] = 'Content-Type: application/json';
+           //  if(authenticateOdoo()){
+           //    $headers[] = 'Cookie: '.authenticateOdoo();  
+           //  }
             
-            $cust_mst =CustomerMaster::where('id',$post->id)->first();
-            $customer_email=$cust_mst->custEmail($cust_mst->email);
+           //  $cust_mst =CustomerMaster::where('id',$post->id)->first();
+           //  $customer_email=$cust_mst->custEmail($cust_mst->email);
 
-            if($cust_mst->info->profile_image !="")
-            {
-                $prof_img = storage_path('/app/public/customer_profile/'.$cust_mst->info->profile_image);
-                $base64_img = $this->base64_encode_html_image($prof_img, '1x1');
+           //  if($cust_mst->info->profile_image !="")
+           //  {
+           //      $prof_img = storage_path('/app/public/customer_profile/'.$cust_mst->info->profile_image);
+           //      $base64_img = $this->base64_encode_html_image($prof_img, '1x1');
 
-            }else{
-                $base64_img = "";
-            }
+           //  }else{
+           //      $base64_img = "";
+           //  }
 
-            // dd($base64_img);
+           //  // dd($base64_img);
 
-            $datapass = json_encode(array(
-            'jsonrpc'=>"2.0",
-            'method'=>"call",
-            'params'=>array(
-            'model'=>"res.partner",
-            'method'=>"create_customer",
-            'args'=>[[]],
-            'kwargs'=>array(
-                'vals'=>array(
-                    'first_name'=>$cust_mst->info->first_name,
-                    'last_name'=>$cust_mst->info->last_name,
-                    'email'=>$customer_email,
-                    'phone'=>$cust_mst->custPhonecode($cust_mst->phone)." ".$cust_mst->custPhone($cust_mst->phone),
-                    'ref_no'=>'#Test',
-                    'contact_type'=>'customer',
-                    'bb_partner_id'=>$post->id,
-                    'image'=>$base64_img,
-                )
-            ),
-            ),
-            )); 
+           //  $datapass = json_encode(array(
+           //  'jsonrpc'=>"2.0",
+           //  'method'=>"call",
+           //  'params'=>array(
+           //  'model'=>"res.partner",
+           //  'method'=>"create_customer",
+           //  'args'=>[[]],
+           //  'kwargs'=>array(
+           //      'vals'=>array(
+           //          'first_name'=>$cust_mst->info->first_name,
+           //          'last_name'=>$cust_mst->info->last_name,
+           //          'email'=>$customer_email,
+           //          'phone'=>$cust_mst->custPhonecode($cust_mst->phone)." ".$cust_mst->custPhone($cust_mst->phone),
+           //          'ref_no'=>'#Test',
+           //          'contact_type'=>'customer',
+           //          'bb_partner_id'=>$post->id,
+           //          'image'=>$base64_img,
+           //      )
+           //  ),
+           //  ),
+           //  )); 
 
 
-           $url_cust_reg = "http://3.109.84.120:7054/web/dataset/call_kw";
-           $handle = curl_init($url_cust_reg);
-            curl_setopt($handle, CURLOPT_POST, true);
-            curl_setopt($handle, CURLOPT_POSTFIELDS, $datapass);
-            curl_setopt($handle, CURLOPT_HTTPHEADER, $headers); 
-            curl_setopt($handle, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($handle, CURLOPT_SSL_VERIFYPEER, false);
-            $response = curl_exec($handle);
+           // $url_cust_reg = "http://3.109.84.120:7054/web/dataset/call_kw";
+           // $handle = curl_init($url_cust_reg);
+           //  curl_setopt($handle, CURLOPT_POST, true);
+           //  curl_setopt($handle, CURLOPT_POSTFIELDS, $datapass);
+           //  curl_setopt($handle, CURLOPT_HTTPHEADER, $headers); 
+           //  curl_setopt($handle, CURLOPT_RETURNTRANSFER, true);
+           //  curl_setopt($handle, CURLOPT_SSL_VERIFYPEER, false);
+           //  $response = curl_exec($handle);
             
-            if (curl_errno($handle)) {
-            $error_msg = curl_error($handle);
-            // dd($error_msg);
-            }
-            curl_close($handle);
-            $return_response = json_decode($response,true);
-            // dd($return_response);
-            if(isset($return_response) && isset($return_response['result'])){
-            CustomerMaster::where('id',$post->id)->update(['odoo_id'=>$return_response['result']['partner_id']]);
-           // print_r($msg); die();
-            // if ($update) Email::sendEmail(geAdminEmail(), $post->email, 'Reset Password', $msg);
-           }
+           //  if (curl_errno($handle)) {
+           //  $error_msg = curl_error($handle);
+           //  // dd($error_msg);
+           //  }
+           //  curl_close($handle);
+           //  $return_response = json_decode($response,true);
+           //  // dd($return_response);
+           //  if(isset($return_response) && isset($return_response['result'])){
+           //  CustomerMaster::where('id',$post->id)->update(['odoo_id'=>$return_response['result']['partner_id']]);
+           // // print_r($msg); die();
+           //  // if ($update) Email::sendEmail(geAdminEmail(), $post->email, 'Reset Password', $msg);
+           // }
 
 
             $cust_mst =CustomerMaster::where('id',$post->id)->first();

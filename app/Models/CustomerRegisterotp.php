@@ -11,5 +11,5 @@ class CustomerRegisterotp extends Model
     protected $table = 'user_registeration_otp';
     protected $guarded=[];
     
-    protected $fillable = ['country_code', 'phone_number','email', 'otp', 'status','created_at'];
+    protected $fillable = ['country_code', 'phone_number','email', 'otp', 'status','created_at','user_id'];
 }

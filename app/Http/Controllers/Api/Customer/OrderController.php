@@ -75,10 +75,14 @@ use App\Models\customer\CustomerTelecom;
 use App\Models\customer\CustomerCreditLogs;
 use App\Models\customer\CustomerCredits;
 use App\Models\customer\CustomerBranchEmployees;
+use App\Models\CustomerPoints;
 use App\Models\SellerAddress;
 use App\Models\SalesOrderShippingStatus;
 use App\Models\SalesOrderStatusHistory;
 use App\Models\InviteSave;
+
+use App\Models\crm\{CrmAssortmentMaster, CrmChildProductsMaster, CrmCustomerType,CrmPartAssortmentDetails,
+CrmPartAssortmentMaster,CrmProduct,CrmSalesPriceList,CrmSalesPriceType,CrmSize,CrmBranch,CrmCompany};
 
 class OrderController extends Controller
 {
@@ -363,7 +367,7 @@ public function apply_coupon($user_id,$id)
 
      }
     
-public function placeorder(Request $request)
+    public function placeorder(Request $request)
     {
         if(!$user = validateToken($request->post('access_token'))){ return invalidToken(); }
         $user_id = $user['user_id'];
@@ -383,7 +387,8 @@ public function placeorder(Request $request)
             'reward_amt'            => ['nullable'],
             'reward_id'             => ['nullable','numeric'],
             'payment_type'          => ['required'],
-            'address_id'            => ['required','numeric']
+            'address_id'            => ['required','numeric'],
+            'use_points'            => ['required','in:0,1'],
 
         ]);
         $input = $request->all();
@@ -392,6 +397,51 @@ public function placeorder(Request $request)
         {    
           return ['httpcode'=>400,'status'=>'error','message'=>'Invalid parameters','data'=>['errors'=>$validator->messages()]];
         }else {
+            $access_token = $request->access_token;
+            $user_logins = DB::table('usr_logins')->where('access_token',$access_token)->first();
+
+            $user_id = $user_logins->user_id;
+
+            if($input['payment_type']==2)
+            {
+                $credits_log = CustomerCreditLogs::where('user_id',$user_id)->where('is_deleted',0)->first();
+                $crd_updated = $credits_log->updated_at;
+
+                $validity = Carbon::createFromFormat('Y-m-d H:i:s',$crd_updated);
+                $crd_days = $credits_log->credit_days;
+
+                $validity_date = $validity->addDays($crd_days);
+
+                $current_date = Carbon::now();
+
+                if($current_date > $validity_date)
+                {
+                    return ['httpcode'=>400,'status'=>'error','message'=>'Credit Vality Date Expired !'];
+                }
+            }
+
+            if($input['payment_type']==2)
+            {
+                $credits_log = CustomerCreditLogs::where('user_id',$user_id)->where('is_deleted',0)->first();
+                $purchase_limit = $credits_log->per_purchase;
+                $total_purchase_amount = $input['total_amt'];
+
+                if(($total_purchase_amount > $purchase_limit) && ($purchase_limit != 0))
+                {
+                    return ['httpcode'=>400,'status'=>'error','message'=>'Total Amount is greater than Purchase Limit !'];
+                }
+            }
+
+            if($input['use_points'] == 1)
+            {
+                $bal_points = CustomerPoints::getbalancePoints($user_id);
+
+                if($bal_points < $request->use_points)
+                {
+                    return ['httpcode'=>400,'status'=>'error','message'=>'Check points Balance !'];
+                }
+            }
+
         $carts = Product::join('usr_cart_item','prd_products.id','=','usr_cart_item.product_id')
                         ->join('usr_cart','usr_cart_item.cart_id','=','usr_cart.id')
                         ->where('usr_cart.user_id',$user_id)    
@@ -400,79 +450,75 @@ public function placeorder(Request $request)
                         ->where('usr_cart_item.is_active',1)
                         ->where('usr_cart_item.is_deleted',0)
                         ->get();  
-        $cart = Product::join('usr_cart_item','prd_products.id','=','usr_cart_item.product_id')
-                        ->join('usr_cart','usr_cart_item.cart_id','=','usr_cart.id')
-                        ->where('usr_cart.user_id',$user_id)    
-                        ->where('usr_cart.is_active',1)
-                        ->where('usr_cart.is_deleted',0)
-                        ->where('usr_cart_item.is_active',1)
-                        ->where('usr_cart_item.is_deleted',0)
-                        ->distinct()
-                        ->get('seller_id');                           
+        // $cart = Product::join('usr_cart_item','prd_products.id','=','usr_cart_item.product_id')
+        //                 ->join('usr_cart','usr_cart_item.cart_id','=','usr_cart.id')
+        //                 ->where('usr_cart.user_id',$user_id)    
+        //                 ->where('usr_cart.is_active',1)
+        //                 ->where('usr_cart.is_deleted',0)
+        //                 ->where('usr_cart_item.is_active',1)
+        //                 ->where('usr_cart_item.is_deleted',0)
+        //                 ->distinct()
+        //                 ->get('seller_id');                           
 
 
         if(count($carts)>0){    
             //ADDRESS
             $addr_list =  CustomerAddress::where('id',$input['address_id'])->first();
-            foreach($carts as $rows){
-                $products[] = $this->get_cart_products($rows->product_id,$rows->cart_id,$rows->quantity,$lang);
-            }  
-            $filter = array_filter($products);
+            // foreach($carts as $rows){
+            //     $products[] = $this->get_cart_products($rows->product_id,$rows->cart_id,$rows->quantity,$lang);
+            // }  
+            // $filter = array_filter($products);
             $tot_tax =0;
             $total_cost=0;
             $total_discount=0;
             //dd($filter);
-            if(count($filter)>0)
-            {
-                foreach($filter as $value)
-                {
-                    $tot_tax += $value['total_tax_value'];
-                    if($value['total_discount_price']==0)
-                    {
-                     $total_cost +=(int)$value['total_actual_price']; 
-                     $total_discount +=(int)$value['unit_discount_price'] * $value['quantity'];  
-                    }
-                    else
-                    {
-                      $total_cost +=(int)$value['total_discount_price'];
-                      $total_discount +=(int)$value['unit_discount_price'] * $value['quantity'];    
-                    }
-                }
-
-                $grand_tot = $tot_tax+$total_cost;
-            }
+           
 
             $cashback_amount=0;
             $coupon_discount_amount=0;
-            if($input['is_coupon']==true)
+            
+            
+              if($input['is_platform_coupon']==true)
+        {
+            $pltform_coupon_id = $input['platform_coupon_id'];
+            if($input['platform_discount_type']=='discount')
             {
-                $coupon_id = $input['coupon_id'];
-                if($input['discount_type']=='discount')
-                {
-                    $coupon_discount_type = $input['discount_type'];
-                    $coupon_discount_amount = $this->apply_coupon($user_id,$coupon_id);
-                   
-
-                }else if($input['discount_type']=='cashback'){
-                    $coupon_discount_type = $input['discount_type'];
-                    $cashback_amount = $this->apply_coupon($user_id,$coupon_id);
-                    
-                }
-                else
-                {
-                    $coupon_id = '';
-                    $discount_amt = 0;
-                    $discount_type = '';
-                    
-                }
+                $plform_discount_type = $input['platform_discount_type'];
+                $pltform_discount_amt = $input['discount_amt'];
+                $parent_g_total = $input['total_amt'] - $pltform_discount_amt;
+                
+               
             }
             else
             {
-                    $coupon_id = '';
-                    $discount_amt = 0;
-                    $discount_type = '';
+                $pltform_coupon_id = '';
+                $pltform_discount_amt = 0;
+                $parent_g_total = '';
+                $plform_discount_type = '';
+                
             }
+        }
+        else
+        {
+                $pltform_coupon_id = '';
+                $pltform_discount_amt = 0;
+                $parent_g_total = '';
+                $plform_discount_type = '';
+        }
         
+        
+        if($input['invite_coupon_id'] !="")
+        {
+            // disable coupon
+            
+            InviteSave::where('id',$input['invite_coupon_id'])->update([
+             'is_valid'=>0,'updated_at'=>date("Y-m-d H:i:s")]);
+             
+             $pltform_discount_amt = $input['discount_amt'];
+        $parent_g_total = $input['total_amt'] - $pltform_discount_amt;
+            
+        }
+
             //WALlet balance
             if($input['e_money_amt']==false)
             {
@@ -484,6 +530,25 @@ public function placeorder(Request $request)
                 
             }
         
+            $insert_sale_parent = ParentSale::create(['org_id'            => 1,
+                              'user_id'           => $user_id,
+                              'tot_amount'        => $input['total_amt'],
+                              'platform_coupon_id'=> $pltform_coupon_id,
+                              'discount_type'     => $plform_discount_type,
+                              'discount_amt'      => $pltform_discount_amt,
+                              'wallet_amt'        => $wallet_amt,
+                              'reward_id'         => $input['reward_id'],
+                              'reward_amt'        => $input['reward_amt'],    
+                              'grand_total'       => $input['total_amt']-$pltform_discount_amt - $wallet_amt,   
+                              'created_at'        => date("Y-m-d H:i:s"),
+                              'updated_at'        => date("Y-m-d H:i:s"),
+                              'currency_code'     => $input['currency_code'],
+                              'currency_amount'   => $input['currency_amount']
+                             
+                              ]);
+            $parent_sale_id  = $insert_sale_parent->id; 
+
+            // dd($parent_sale_id);
         
             // reward application
             $sale_before  =  SaleOrder::where('cust_id',$user_id)->count();
@@ -558,27 +623,30 @@ public function placeorder(Request $request)
                 $saleorder_id = date('y').date('m').str_pad($latestorder_ids, 6, "0", STR_PAD_LEFT);
             }
            
-                      
+                $seller_arrays =$input['seller_array'];      
                 
-                if($input['discount_amt']!="")
+                foreach($seller_arrays as $rows)
+                {  
+
+                if($rows['discount_amt']!="")
                 {
-                    $discount_amt_sale = $input['discount_amt'];
+                    $discount_amt_sale = $rows['discount_amt'];
                 }
                 else
                 {
                     $discount_amt_sale = 0;
                 }
-                if($input['packing_charge']!="")
+                if($rows['packing_charge']!="")
                 {
-                    $packing_chrg = $input['packing_charge'];
+                    $packing_chrg = $rows['packing_charge'];
                 }
                 else
                 {
                     $packing_chrg = 0;
                 }
-                if($input['shipping_charge']!="")
+                if($rows['shipping_charge']!="")
                 {
-                    $shipping_chrg = 0; //(float)$input['shipping_charge'];
+                    $shipping_chrg = (float)$rows['shipping_charge'];
                 }
                 else
                 {
@@ -587,30 +655,58 @@ public function placeorder(Request $request)
                 
                
                 
-                $grnd_tot_sale = ($input['total_cost']+$input['total_tax']) - $discount_amt_sale - $wallet_amt;
-                $create_saleorder = SaleOrder::create(['org_id' => 1,
-                'parent_sale_id'  =>0,
+                 $grnd_tot_sale = ($rows['total_cost']+$rows['total_tax']+$rows['shipping_charge']) - $discount_amt_sale - $wallet_amt;
+
+                   $create_saleorder = SaleOrder::create(['org_id' => 1,
+                'parent_sale_id'  =>$parent_sale_id,
                 'order_id'        => $saleorder_id,
                 'cust_id'         => $user_id,
-                'branch_id'         => $input['branch_id'],
-                'total'           =>  $input['total_cost'],
+                'seller_id'       => $rows['seller_id'],
+                'total'           => $rows['total_cost'],
                 'discount'        => $discount_amt_sale,
-                'tax'             => $input['total_tax'],
+                'tax'             => $rows['total_tax'],
                 'shiping_charge'  => $shipping_chrg,
                 'packing_charge'  => $packing_chrg,
                 'wallet_amount'   => $wallet_amt,
                 'g_total'         => $grnd_tot_sale,
-                'discount_type'   => $input['discount_type'],  
-                'coupon_id'       => $input['coupon_id'],
-                'coupon_discount'       => $coupon_discount_amount,
-                'order_status'    => 'pending',
+                'ecom_commission' => 0,
+                'discount_type'   => $rows['discount_type'],  
+                'coupon_id'       => $rows['coupon_id'],
+                'invite_coupon_id'       => $input['invite_coupon_id'],
+                'order_status'    => 'pending', //initiated
                 'payment_status'  => 'pending',
                 'shipping_status' => 'pending',
                 'cancel_process'  => 0,
-                'cust_message'    => $input['message'],    
+                'cust_message'    => $rows['message'],    
                 'created_at'    =>date("Y-m-d H:i:s"),
                 'updated_at'    =>date("Y-m-d H:i:s")]);
                 $sale_id  = $create_saleorder->id;
+
+                if($request->use_points == 1)
+                {
+                    $points['user_id'] = $user_id;
+                    $points['sales_id'] = $sale_id;
+                    $points['credit'] = 0;
+                    $points['debit'] = $request->points_used;
+                    $points['is_deleted'] = 0;
+                    $points['created_at'] = date("Y-m-d H:i:s");
+                    $points['updated_at'] = date("Y-m-d H:i:s");
+
+                    $customer_points_id = CustomerPoints::create($points)->id;
+                }
+                if(!empty($request->insert_points))
+                {
+                    $points['user_id'] = $user_id;
+                    $points['sales_id'] = $sale_id;
+                    $points['credit'] = $request->insert_points;
+                    $points['debit'] = 0;
+                    $points['is_deleted'] = 0;
+                    $points['created_at'] = date("Y-m-d H:i:s");
+                    $points['updated_at'] = date("Y-m-d H:i:s");
+
+                    $customer_points_id = CustomerPoints::create($points)->id;
+                }
+
                 if($wallet_amt>0)
                 {
                     $wallet_usage = CustomerWallet_Model::create(['user_id'    =>  $user_id,
@@ -655,6 +751,32 @@ public function placeorder(Request $request)
                 $payment_status="pending";
                 $payment_data="";
                 $transaction_id="";
+
+                // $access_token = $request->access_token;
+                // $user_logins = DB::table('usr_logins')->where('access_token',$access_token)->first();
+
+                // $user_id = $user_logins->user_id;
+                
+                // $credits_log = CustomerCreditLogs::where('user_id',$user_id)->where('is_deleted',0)->first();
+
+                // $cust_credits['user_id'] = $user_id;
+                // $cust_credits['ref_id'] = $sale_id;
+                // $cust_credits['log_id'] = $credits_log->id;
+                // $cust_credits['credit_limit'] = $credits_log->credit_limit;
+                // $cust_credits['credit_days'] = $credits_log->credit_days;
+                // $cust_credits['credit'] = 0;
+                // // $cust_credits['debit'] = $request->total_cost;
+                // $cust_credits['debit'] = $rows['total_cost'];
+                // $cust_credits['allow_purchase'] = $credits_log->allow_purchase;
+                // $cust_credits['per_purchase'] = $credits_log->per_purchase;
+                // $cust_credits['payment_status'] = 'pending';
+                // $cust_credits['is_active'] = 1;
+                // $cust_credits['created_by'] = $user_id;
+                // $cust_credits['modified_by'] = $user_id;
+                // $cust_credits['created_at'] = date('Y-m-d H:i:s');
+                // $cust_credits['updated_at'] = date('Y-m-d H:i:s');
+
+                // $customer_credit_id = CustomerCredits::create($cust_credits)->id;
                 
                 }else{
                 $payment_type="Offline Payment";
@@ -670,11 +792,12 @@ public function placeorder(Request $request)
                 'payment_data'     => $payment_data,
                 'amount'           => $grnd_tot_sale,
                 'payment_status'   => "pending"])->id;
-                $sale_items = $this->insert_products($sale_id,$user_id,$lang);
+                // $sale_items = $this->insert_products($sale_id,$user_id,$lang);
+                $sale_items = $this->insert_seller_products($sale_id,$rows['seller_id'],$user_id,$lang);
                 $saleorder_payments = SalesOrderShippingStatus::create([
                 'sales_id'         => $sale_id,
                 'status'=> "pending" ]);
-                  if($input['is_coupon']==true)
+                  if($rows['is_coupon']==true)
                     {
                         
                         if($input['discount_type']=='cashback')
@@ -722,14 +845,15 @@ public function placeorder(Request $request)
                 
              if($input['payment_type']==3){ 
                  $order_id=$saleorder_id;
-                 $prod_datas  = Product::join('usr_cart_item','prd_products.id','=','usr_cart_item.product_id')
-                        ->join('usr_cart','usr_cart_item.cart_id','=','usr_cart.id')
+                 $prod_datas  = Cart::join('usr_cart_item','usr_cart.id','=','usr_cart_item.cart_id')->join('prd_products','usr_cart_item.product_id','=','prd_products.id')
                         ->where('usr_cart.user_id',$user_id)    
                         ->where('usr_cart.is_active',1)
                         ->where('usr_cart.is_deleted',0)
                         ->where('usr_cart_item.is_active',1)
                         ->where('usr_cart_item.is_deleted',0)
-                        ->where('prd_products.is_active',1)->where('prd_products.is_deleted',0)
+                        ->where('prd_products.is_deleted',0)
+                        ->where('prd_products.seller_id',$rows['seller_id'])
+                        ->groupBy('prd_products.id', 'usr_cart_item.assortment_id')
                         ->select('prd_products.*','usr_cart.*','usr_cart_item.*','usr_cart_item.product_id as cart_prd_id')
                         ->get();
                         
@@ -761,37 +885,37 @@ public function placeorder(Request $request)
                         
                         }
                         
-                        $seller_name  = "Bigbasket";
+                        $seller_name  = "Ushas";
                 
-                $cust_info  = CustomerInfo::where('user_id',$user_id)->first();
-                $user_name  = $cust_info->first_name;
-                $user_email       = CustomerTelecom::where('user_id',$user_id)->where('usr_telecom_typ_id',1)->first(); 
-                $user_email = $user_email->usr_telecom_value;
+                 $cust_info  = CustomerInfo::where('user_id',$user_id)->first();
+                 $user_name  = $cust_info->first_name;
+                 $user_email       = CustomerTelecom::where('user_id',$user_id)->where('usr_telecom_typ_id',1)->first(); 
+                 $user_email = $user_email->usr_telecom_value;
                 
               
-               $data['data'] = array("content"=>"Test",'seller_name'=>$seller_name,'username'=>$user_name,'sale_id'=>$order_id);
-                $var = Mail::send('emails.customer_msg_email', $data, function($message) use($data,$user_email) {
-                $message->from(getadmin_mail(),'Bigbasket');    
-                $message->to($user_email);
-                $message->subject('Order Placed ');
-                });
+                $data['data'] = array("content"=>"Test",'seller_name'=>$seller_name,'username'=>$user_name,'sale_id'=>$order_id);
+                 $var = Mail::send('emails.customer_msg_email', $data, function($message) use($data,$user_email) {
+                 $message->from(getadmin_mail(),'Ushas');    
+                 $message->to($user_email);
+                 $message->subject('Order Placed ');
+                 });
         
-                SaleOrder::where('order_id',$order_id)->update(['order_status'=>'pending',
-                'payment_status'=>'pending','updated_at'=>date("Y-m-d H:i:s")]);
+               //  SaleOrder::where('order_id',$order_id)->update(['order_status'=>'pending',
+               //  'payment_status'=>'pending','updated_at'=>date("Y-m-d H:i:s")]);
                 
-                 $from       = $user_id; 
-                $utype      = 3;
-                $to         = $user_id; 
-                $ntype      = 'order_placed';
-                $title      = 'Order placed';
-                $desc       = 'New order has been placed. Order ID:'.$order_id;
-                $refId      = $saleorder_payment;
-                $reflink    = 'customer/order/detail';
-                $notify     = 'customer';
-                addNotification($from,$utype,$to,$ntype,$title,$desc,$refId,$reflink,$notify);
+               //   $from       = $user_id; 
+               //  $utype      = 3;
+               //  $to         = $user_id; 
+               //  $ntype      = 'order_placed';
+               //  $title      = 'Order placed';
+               //  $desc       = 'New order has been placed. Order ID:'.$order_id;
+               //  $refId      = $saleorder_payment;
+               //  $reflink    = 'customer/order/detail';
+               //  $notify     = 'customer';
+               //  addNotification($from,$utype,$to,$ntype,$title,$desc,$refId,$reflink,$notify);
              }
                 
-            
+            }
 
             
             return ['httpcode'=>200,'status'=>'success','message'=>'Order placed','data'=>['order_id'=>$saleorder_id]];
@@ -821,179 +945,7 @@ public function placeorder(Request $request)
             { $return_val=0;
                 return $return_val; }
         }
-    public function placeorder123(Request $request)
-    {
-        if(!$user = validateToken($request->post('access_token'))){ return invalidToken(); }
-        $user_id = $user['user_id'];
-        $lang=$request->lang_id;
-        $validator=  Validator::make($request->all(),[
-            'access_token' => ['required'],
-            'e_money'      => ['nullable','numeric','max:1'],
-            'e_money_amt'  => ['required','numeric'],
-            'is_coupon'    => ['nullable','numeric','max:1'],
-            'coupon_id'    => ['nullable','numeric'],
-            'payment_type' => ['required'],
-            'shipping_chrg'=> ['required'], 
-            'address_id'   => ['nullable'],
-            'name'         => ['required'],
-            'phone'        => ['required'],
-            'email'        => ['required','email'],
-            'address_line1'=> ['required'],
-            'address_line2'=> ['required'],   
-            'zip_code'     => ['required'],
-            'city'         => ['required'],
-            'state'        => ['required'],
-            'country'      => ['required'],
-            'latitude'     => ['nullable'],
-            'longitude'    => ['nullable'] 
-
-        ]);
-        $input = $request->all();
-
-    if ($validator->fails()) 
-    {    
-      return ['httpcode'=>400,'status'=>'error','message'=>'Invalid parameters','data'=>['errors'=>$validator->messages()]];
-    }
-    else
-    {
-
-        $carts = Product::join('usr_cart_item','prd_products.id','=','usr_cart_item.product_id')
-                        ->join('usr_cart','usr_cart_item.cart_id','=','usr_cart.id')
-                        ->where('usr_cart.user_id',$user_id)    
-                        ->where('usr_cart.is_active',1)
-                        ->where('usr_cart.is_deleted',0)
-                        ->where('usr_cart_item.is_active',1)
-                        ->where('usr_cart_item.is_deleted',0)
-                        ->get();  
-       $cart = Product::join('usr_cart_item','prd_products.id','=','usr_cart_item.product_id')
-                        ->join('usr_cart','usr_cart_item.cart_id','=','usr_cart.id')
-                        ->where('usr_cart.user_id',$user_id)    
-                        ->where('usr_cart.is_active',1)
-                        ->where('usr_cart.is_deleted',0)
-                        ->where('usr_cart_item.is_active',1)
-                        ->where('usr_cart_item.is_deleted',0)
-                        ->distinct()
-                        ->get('seller_id');                           
-
-
-        if(count($carts)>0)
-        {    
-           foreach($carts as $rows)
-            {
-                $products[] = $this->get_cart_products($rows->product_id,$rows->cart_id,$rows->quantity,$lang);
-            }  
-            $filter = array_filter($products);
-            $tot_tax =0;
-            $total_cost=0;
-            $total_discount=0;
-            if(count($filter)>0)
-            {
-                foreach($filter as $value)
-                {
-                    $tot_tax += $value['total_tax_value'];
-                    if($value['total_discount_price']==0)
-                    {
-                     $total_cost +=(int)$value['total_actual_price']; 
-                     $total_discount +=(int)$value['discount_values'];   
-                    }
-                    else
-                    {
-                      $total_cost +=(int)$value['total_discount_price'];
-                      $total_discount +=(int)$value['discount_values'];    
-                    }
-                }
-
-                $grand_tot = $tot_tax+$total_cost;
-            }
-
-        //   return [$carts];
-        //   die;
-
-            $latestOrder = SaleOrder::orderBy('created_at','DESC')->first();
-            $saleorder_id = date('y').date('m').str_pad($latestOrder->id + 1, 6, "0", STR_PAD_LEFT);
-            // echo $saleorder_id;
-            // die;
-            foreach($cart as $rows)
-            {   
-                //$total = $this->get_total_seller_product($rows->seller_id); 
-                $create_saleorder = SaleOrder::create(['org_id' => 1,
-                'order_id'        => $saleorder_id,
-                'cust_id'         => $user_id,
-                'seller_id'       => $rows->seller_id,
-                'total'           => $total_cost,
-                'discount'        => $total_discount,
-                'tax'             => $tot_tax,
-                'shiping_charge'  => 0,
-                'packing_charge'  => 0,
-                'wallet_amount'   => $input['e_money_amt'],
-                'g_total'         => $grand_tot,
-                'ecom_commission' => 0,
-                'discount_type'   => '',  
-                'coupon_id'       => 0,
-                'order_status'    => 'pending',
-                'payment_status'  => 'pending',
-                'shipping_status' => 'pending',
-                'cancel_process'  => 0,
-                'created_at'    =>date("Y-m-d H:i:s"),
-                'updated_at'    =>date("Y-m-d H:i:s")]);
-                $sale_id  = $create_saleorder->id;
-
-                //Payment
-                $saleorder_payment = SalesOrderPayment::create(['org_id' => 1,
-                'sales_id'         => $sale_id,
-                'payment_method_id'=> $input['payment_type'],
-                'payment_type'     => 'Stripe',
-                'transaction_id'   => '',
-                'payment_data'     => '',
-                'amount'           => $grand_tot,
-                'payment_status'  => 'pending']);
-                $sale_items = $this->insert_products($sale_id,$user_id,$lang);
-            }   
-
-            $insert_address = SalesOrderAddress::create(['sales_id' => $sale_id,
-                'order_id'        => $saleorder_id,
-                'cust_id'         => $user_id,
-                'addr_id'         => 1,
-                'name'            => $input['name'],
-                'phone'           => $input['phone'],
-                'email'           => $input['email'],
-                'address1'        => $input['address_line1'],
-                'address2'        => $input['address_line2'],
-                'zip_code'        => $input['zip_code'],
-                'city'            => $input['city'],
-                'state'           => $input['state'],
-                'country'         => $input['country'],  
-                'latitude'        => $input['latitude'],
-                'longitude'       => $input['longitude'],
-                's_addr_id'       => 1,
-                's_name'          => $input['name'],
-                's_phone'         => $input['phone'],
-                's_email'         => $input['email'],
-                's_address1'      => $input['address_line1'],
-                's_address2'      => $input['address_line2'],
-                's_zip_code'      => $input['zip_code'],
-                's_city'          => $input['city'],
-                's_state'         => $input['state'],
-                's_country'       => $input['country'],  
-                's_latitude'      => $input['latitude'],
-                's_longitude'     => $input['longitude']]);
-            
-            
-            
-            return ['httpcode'=>200,'status'=>'success','message'=>'Order placed','data'=>['order_id'=>$saleorder_id]];
-
-        }
-
-        else
-        {
-            return ['httpcode'=>404,'status'=>'error','message'=>'Cart is empty','data'=>['errors'=>'Cart is empty']];
-        }
-    }//validation true
-
-
-
-
-    }
+    
     
     //Track order
   public function track_order(Request $request)
@@ -1506,190 +1458,633 @@ public function placeorder(Request $request)
            }
         return $data;
     }
-    function insert_products($sale_id,$user_id,$lang){
+    
+function custom_product_qty($prd_id,$assort,$user_id=0)
+  {
+    $custom_qty=DB::table("usr_cart_item")->select(DB::raw("SUM(quantity) as quantity"))->where('product_id',$prd_id)->where('assortment_id',$assort)->where('is_active',1)->where('is_deleted',0)->whereIn('cart_id',function($query) use($user_id) {
+   $query->select('id')->from('usr_cart')->where('is_deleted',0)->where('user_id',$user_id);})->first();    
+    if($custom_qty->quantity > 0)
+    {
+        return $custom_qty->quantity;
+    }
+    else
+    {
+        return 0;
+    }
+  }
 
-        $product=[]; $odoo_arr=[];
-        $prod_datas  = Product::join('usr_cart_item','prd_products.id','=','usr_cart_item.product_id')
-                            ->join('usr_cart','usr_cart_item.cart_id','=','usr_cart.id')
-                            ->where('usr_cart.user_id',$user_id)    
-                            ->where('usr_cart.is_active',1)
-                            ->where('usr_cart.is_deleted',0)
-                            ->where('usr_cart_item.is_active',1)
-                            ->where('usr_cart_item.is_deleted',0)
-                            ->where('prd_products.is_active',1)->where('prd_products.is_deleted',0)
-                            ->select('prd_products.*','usr_cart.*','usr_cart_item.*','usr_cart_item.product_id as cart_prd_id')
-                            ->get();
-      //  dd($prod_datas);
+function product_assort_list($prd_id,$assort,$user_id=0)
+  {
+    $custom_assort=DB::table("usr_cart_item")->select('prd_assign_id','quantity','assortment_qty','assortment_id')->where('product_id',$prd_id)->where('assortment_id',$assort)->where('is_active',1)->where('is_deleted',0)->whereIn('cart_id',function($query) use($user_id) {
+   $query->select('id')->from('usr_cart')->where('is_deleted',0)->where('user_id',$user_id);})->get();
+    $prd_assorts = [];
+    if($custom_assort)
+    {
+        $prd_assorts_data = [];
+        foreach($custom_assort as $k=>$v)
+        {
+            $prd_assorts_data['child_product_id']= $v->prd_assign_id;
+           //if($v->assortment_id>0){ $prd_assorts_data['child_product_qty']= ($v->quantity/$v->assortment_qty); }else{ $prd_assorts_data['child_product_qty']= $v->quantity; } 
+           $prd_assorts_data['child_product_qty']= $v->quantity;
+            $prd_assorts_data['child_assortment_qty']= $v->assortment_qty;
+            $prd_assorts[] = $prd_assorts_data;
+        }
+    }
+    return json_encode($prd_assorts);
+  }
+
+    function insert_seller_products($sale_id,$seller_id,$user_id,$lang){
+        
+        $user = CustomerMaster::where('id',$user_id)->first(); 
+        
+        $crm_cust_id = $user->crm_unique_id;
+        $customer_name = CustomerInfo::where('user_id',$user_id)->first()->first_name;
+
+        $product=[];
+        $prod_datas  = Cart::join('usr_cart_item','usr_cart.id','=','usr_cart_item.cart_id')->join('prd_products','usr_cart_item.product_id','=','prd_products.id')
+                        ->where('usr_cart.user_id',$user_id)    
+                        ->where('usr_cart.is_active',1)
+                        ->where('usr_cart.is_deleted',0)
+                        ->where('usr_cart_item.is_active',1)
+                        ->where('usr_cart_item.is_deleted',0)
+                        ->where('prd_products.is_deleted',0)
+                        ->where('prd_products.seller_id',$seller_id)
+                        ->groupBy('prd_products.id', 'usr_cart_item.assortment_id')
+                        ->select('prd_products.*','usr_cart.*','usr_cart_item.*','usr_cart_item.product_id as cart_prd_id')
+                        ->get();
+            
             if(count($prod_datas)>0)   {    
                 foreach($prod_datas as $prod_data)
-                {   $qty = $prod_data->quantity;
-                    $prd_list['product_id']=$prod_data->product_id;
-                    if($prod_data->product_type==1){
-                    $prd_list['product_name']=$product_name=$prod_data->name;
-                    $parent_id=$prod_data->product_id;
-                    }
-                    else
-                    {
-                     $associate= AssociatProduct::where('ass_prd_id',$prod_data->product_id)->first();
-                     if($associate){
-                         
-                                
-                         $parent_id=$associate->prd_id;
-                    $prd_list['product_name']=$product_name=$associate->product->name;   
-                     }else{
-                      $prd_list['product_name']=$prod_data->name;
-                     }
-                    }
-                    
-                    
-                    $prd_list['currency']=getCurrency()->name;
-                    
-                    $actual_price =$this->get_actual_price($prod_data->product_id);
-                   //$prod_data->prdPrice->price; 
-                       
-                   
-                    $prd_list['unit_actual_price']=$actual_price;
-                    $tot_actual=$actual_price*$qty;
-                    $prd_list['total_actual_price']=$tot_actual;
-                    $tax_amt=$prod_data->getTaxValue($prod_data->tax_id);
-                    
-                    $total_tax_amount = $tot_actual * ($tax_amt/100);
-                    //$prd_list['total_tax_value']=$total_tax_amount;
-                    $prd_list['total_tax_value']=number_format($total_tax_amount,2);
-                     $type=$prod_data->product_type;
-                     $login=1;
-                     $spec_offr = $this->get_offer_price($prod_data->product_id,$type,$login,$qty);
-                    // dd($spec_offr);
-                     foreach ($spec_offr as $item) {
-                            foreach ($item as $key => $value) {
-                                if($key=="unit_discount_price"){
-                                    $unit_discount_price=$value;
-                                }
-                                if($key=="total_discount_price"){
-                                    $total_discount_price=$value;
-                                }
-                            } 
-                        }
-            
+                {   
 
-            $prd_list['is_out_of_stock']=$prod_data->is_out_of_stock;
-           // $discount_price =$prd_list['total_discount_price'];
-            
-            $tot_actual=$actual_price*$qty;
-            $discount=$unit_discount_price*$qty;
+                    $single_prod_data       =   Product::where('is_active',1)->where('is_deleted',0)->where('id',$prod_data->product_id)->first();
+
+                    $crm_product_id = $single_prod_data->crmProduct->id;
+                    $crm_branch_id = $single_prod_data->crmProduct->BranchID;
+                    $assortment_id = $prod_data->assortment_id;
+
+                    $prd_assort = CrmPartAssortmentMaster::where('productID',$crm_product_id)->where('AssortmentID',$assortment_id)->where('is_deleted',0)->first();
+
+                     if($prd_assort)
+                    {
+                        $is_custom = 0;
+                        $quantity = $this->custom_product_qty($single_prod_data->id,$assortment_id,$user_id);
+                        $qty=$prod_data->assortment_qty;
+                        $quantity = $quantity*$qty;
+                    }else{
+                        $is_custom = 1;
+                        $quantity = $this->custom_product_qty($single_prod_data->id,0,$user_id);
+                    }
+
+                    $qty=$quantity;
+
+
+                    $prd_list['product_id']=$prod_data->product_id;
+                    $prd_list['product_name']=$product_name=$this->get_content($prod_data->name_cnt_id,$lang);
+                    
+                        $actual_price = get_crm_price($single_prod_data,$type=1,$user);
+                        $price = $actual_price['actual_price'];
+                        $tax = getTax()->value;
+                        $qty_price = $price*$qty;
+                        
+                        $seller_tax_amount = ($tax/100)*$qty_price;
+                        
+                        $tax_amount = ($tax/100)*$qty_price;
+                        $tot_price = $price+$tax_amount;
+                        $tot_amt_tax=$qty_price+$tax_amount; //$tot_price*$qty;
+                  
+                        if($actual_price['offer']>0){
+                        $discount=(float)$actual_price['offer'];
+                        }else{
+                        $discount=0;
+                      
+                        }
+                   
+          
             $create_saleorder = SaleorderItems::create([
                 'sales_id'        => $sale_id,
-                'parent_id'       => $parent_id,
+                'parent_id'       => $sale_id,
                 'prd_id'          => $prod_data->product_id,
+                'attr_ids'        => $prod_data->prd_assign_id,
                 'prd_type'        => $prod_data->product_type,
                 'prd_name'        => $product_name,
-                'price'           => $actual_price,
-                'qty'             => $prod_data->quantity,
-                'total'           => $tot_actual,
+                'price'           => $price,
+                'qty'             => $qty,
+                'total'           => $qty_price,
                 'discount'        => $discount,
-                'tax'             => $total_tax_amount,
-                'row_total'       => $tot_actual + $total_tax_amount-$discount,
+                'tax'             => $tax_amount,
+                'tax_seller'             => $seller_tax_amount,
+                'row_total'       => $tot_amt_tax,
                 'coupon_id'       => '', 
                 'created_at'    =>date("Y-m-d H:i:s"),
                 'updated_at'    =>date("Y-m-d H:i:s"),
-                'is_deleted'    =>0])->id;
+                'assortments'       => $this->product_assort_list($single_prod_data->id,$assortment_id,$user_id),
+                'is_custom'       => $is_custom,
+                'assortments_id'       => $assortment_id,
+                'is_deleted'    =>0]);
+                
+                 $prd_stock_update = PrdStock::create([
+                    'type'       =>'destroy',
+                    'prd_id'     => $prod_data->product_id,
+                    'child_id'     => $prod_data->prd_assign_id,
+                    'product_type'     => 'child',
+                    'qty'        => $qty,
+                    'rate'       => $price,
+                    'created_by' => $user_id,
+                    'sale_id'    => $sale_id,
+                    'created_at' => date("Y-m-d H:i:s"),
+                    'updated_at' => date("Y-m-d H:i:s")
+                ]);
+                
+                $headers[] = 'Content-Type: application/json';
+   
+                $datapass = json_encode(array(
+                    "CategoryId"=> 0,
+                    "POSSessionId"=> 0,
+                    "POSInvoiceId"=> 0,
+                    "BranchId"=> $crm_branch_id,
+                    "DivisionId"=> 53,
+                    "CustomerId"=> $crm_cust_id,
+                    "OrganisationId"=> 54,
+                    "User_Id"=> $user_id,
+                    "POSInvoiceNumber"=> 0,
+                    "SubTotal"=> $qty_price,
+                    "TotalTax"=> $tax_amount,
+                    "GrandTotal"=> $tot_amt_tax,
+                    "TenderCash"=> 0,
+                    "BalanceAmount"=> 0,
+                    "Cash"=> 0,
+                    "CustomerCredit"=> 0,
+                    "DebitCard"=> null,
+                    "DebitCardNo"=> null,
+                    "DebitCardDate"=> null,
+                    "MobilePayment"=> 0,
+                    "MobilePaymentType"=> null,
+                    "POS_Status"=> 'Created',
+                    "DiscountType"=> null,
+                    "DiscountValue"=> 0,
+                    "CreditNoteNumber"=> null,
+                    "CreditAmount"=> 0,
+                    "CreditBalanceAmount"=> 0,
+                    "CreditNoteId"=> 0,
+                    "POSInvoiceParts"=> stripslashes(json_encode(
+                        array(
+                            array(
+                                "Part_Id"=> $prod_data->unique_id,
+                                "SubProductID"=> $prod_data->prd_assign_id,
+                                "Discount"=> 0,
+                                "DiscountPercentage"=> 0,
+                                "AdditionalDiscount"=> 0,
+                                "AdditionalDiscountPercentage"=> 0,
+                                "IsPartDiscountAmount"=> false,
+                                "GST_Percentage"=> 0,
+                                "SellingPrice"=> $qty_price,
+                                "Quantity"=> $qty,
+                                "Total"=> $tot_amt_tax,
+                                "TotalAmount"=> $tot_amt_tax
+                            )
+                        )
+                    ))
+                ));
+   
+               // dd($datapass);
+   
+            //   $url_cust_reg = "http://20.212.51.46:8081/api/POSUSHAS/SavePOSInvoice";
+               $url_cust_reg = "http://20.204.113.67:5002/api/POSUSHAS/SavePOSInvoice";
+               $handle = curl_init($url_cust_reg);
+               curl_setopt($handle, CURLOPT_POST, true);
+               curl_setopt($handle, CURLOPT_POSTFIELDS, $datapass);
+               curl_setopt($handle, CURLOPT_HTTPHEADER, $headers); 
+               curl_setopt($handle, CURLOPT_RETURNTRANSFER, true);
+               $response = curl_exec($handle);
+               curl_close($handle);
+               $return_response = json_decode($response,true);
+   
+               // dd($return_response);
+   
+               if(isset($return_response) && isset($return_response['Data']))
+               {
+                   SaleOrder::where('id',$sale_id)->update(['crm_id'=>$return_response['Data']]);
+               }
+                
+       
+               }      //foreachend    
 
-            // $odoo_arr['unique_id'] = $prod_data->product_id;
-            // $odoo_arr['product_type'] = $prod_data->product_type;
-            // $odoo_arr['odoo_id'] = $prod_data->odoo_id;
-            // $odoo_arr['description'] = "Test description";
-            // $odoo_arr['qty'] = $prod_data->quantity;
-            // $odoo_arr['price'] = $actual_price;
+       
+            
+            
+             }return $prod_datas;
+           
+        
+    }
 
-            $odoo_arr[] = array('unique_id'=>$prod_data->product_id,'product_type'=>$prod_data->product_type,'odoo_id'=>$prod_data->odoo_id,'description'=>"Test",'qty'=>$prod_data->quantity,'price'=>$actual_price);
+    function insert_products($sale_id,$user_id,$lang)
+    {
+        $product=[]; $odoo_arr=[];
+        $prod_datas = Product::join('usr_cart_item','prd_products.id','=','usr_cart_item.product_id')
+            ->join('usr_cart','usr_cart_item.cart_id','=','usr_cart.id')
+            ->where('usr_cart.user_id',$user_id)    
+            ->where('usr_cart.is_active',1)
+            ->where('usr_cart.is_deleted',0)
+            ->where('usr_cart_item.is_active',1)
+            ->where('usr_cart_item.is_deleted',0)
+            ->where('prd_products.is_active',1)->where('prd_products.is_deleted',0)
+            ->select('prd_products.*','usr_cart.*','usr_cart_item.*','usr_cart_item.product_id as cart_prd_id')
+            ->get();
 
-                 //dd($create_saleorder);
-           $prd_stock_update = PrdStock::create([
-                                                 'type'       =>'destroy',
-                                                 'prd_id'     => $prod_data->product_id,
-                                                 'qty'        => $prod_data->quantity,
-                                                 'rate'       => $actual_price,
-                                                 'created_by' => $user_id,
-                                                 'sale_id'    => $sale_id,
-                                                 'created_at' => date("Y-m-d H:i:s"),
-                                                 'updated_at' => date("Y-m-d H:i:s")
-                                                 ]);  
 
-                if($prod_data->product_type==2){
+        
+        if(count($prod_datas)>0)
+        {
+            foreach($prod_datas as $prod_data)
+            {
+                $qty = $prod_data->quantity;
+                $prd_list['product_id'] = $prod_data->product_id;
+                
+                if($prod_data->product_type==1)
+                {
+                    $prd_list['product_name'] = $product_name=$prod_data->name;
+                    $parent_id = $prod_data->product_id;
+                }
+                else
+                {
+                    $associate = AssociatProduct::where('ass_prd_id',$prod_data->product_id)->first();
+                    
+                    if($associate)
+                    {            
+                        $parent_id = $associate->prd_id;
+                        $prd_list['product_name'] = $product_name=$associate->product->name;   
+                    }
+                    else
+                    {
+                        $prd_list['product_name'] = $prod_data->name;
+                    }
+                }  
+                
+                $prd_list['currency']=getCurrency()->name;    
+                $actual_price =$this->get_actual_price($prod_data->product_id);
+                //$prod_data->prdPrice->price;   
+                $prd_list['unit_actual_price']=$actual_price;
+                $tot_actual=$actual_price*$qty;
+                $prd_list['total_actual_price']=$tot_actual;
+                $tax_amt=$prod_data->getTaxValue($prod_data->tax_id);
+                $total_tax_amount = $tot_actual * ($tax_amt/100);
+                //$prd_list['total_tax_value']=$total_tax_amount;
+                $prd_list['total_tax_value']=number_format($total_tax_amount,2);
+                $type=$prod_data->product_type;
+                $login=1;
+                $spec_offr = $this->get_offer_price($prod_data->product_id,$type,$login,$qty);
+                // dd($spec_offr);
+                
+                foreach ($spec_offr as $item)
+                {
+                    foreach ($item as $key => $value)
+                    {
+                        if($key=="unit_discount_price")
+                        {
+                            $unit_discount_price=$value;
+                        }
+                        if($key=="total_discount_price")
+                        {
+                            $total_discount_price=$value;
+                        }
+                    } 
+                }
+                $prd_list['is_out_of_stock']=$prod_data->is_out_of_stock;
+                // $discount_price =$prd_list['total_discount_price'];            
+                $tot_actual=$actual_price*$qty;
+                $discount=$unit_discount_price*$qty;
+                $create_saleorder = SaleorderItems::create([
+                    'sales_id'        => $sale_id,
+                    'parent_id'       => $parent_id,
+                    'prd_id'          => $prod_data->product_id,
+                    'prd_type'        => $prod_data->product_type,
+                    'prd_name'        => $product_name,
+                    'price'           => $actual_price,
+                    'qty'             => $prod_data->quantity,
+                    'total'           => $tot_actual,
+                    'discount'        => $discount,
+                    'tax'             => $total_tax_amount,
+                    'row_total'       => $tot_actual + $total_tax_amount-$discount,
+                    'coupon_id'       => '', 
+                    'created_at'    =>date("Y-m-d H:i:s"),
+                    'updated_at'    =>date("Y-m-d H:i:s"),
+                    'is_deleted'    =>0])->id;
+
+                // $odoo_arr['unique_id'] = $prod_data->product_id;
+                // $odoo_arr['product_type'] = $prod_data->product_type;
+                // $odoo_arr['odoo_id'] = $prod_data->odoo_id;
+                // $odoo_arr['description'] = "Test description";
+                // $odoo_arr['qty'] = $prod_data->quantity;
+                // $odoo_arr['price'] = $actual_price;
+
+                $odoo_arr[] = array('unique_id'=>$prod_data->product_id,'product_type'=>$prod_data->product_type,'odoo_id'=>$prod_data->odoo_id,'description'=>"Test",'qty'=>$prod_data->quantity,'price'=>$actual_price);
+
+                //dd($create_saleorder);
+                $prd_stock_update = PrdStock::create([
+                    'type'       =>'destroy',
+                    'prd_id'     => $prod_data->product_id,
+                    'qty'        => $prod_data->quantity,
+                    'rate'       => $actual_price,
+                    'created_by' => $user_id,
+                    'sale_id'    => $sale_id,
+                    'created_at' => date("Y-m-d H:i:s"),
+                    'updated_at' => date("Y-m-d H:i:s")
+                ]);
+
+                if($prod_data->product_type==2)
+                {
                     $associate= AssociatProduct::where('ass_prd_id',$prod_data->product_id)->first();
-                     if($associate){
-                         $prod_datas       =   AssignedAttribute::where('is_deleted',0)->where('prd_id',$prod_data->product_id)->orderBy('attr_id','asc')->groupBy('attr_id')->get();
-                            if(count($prod_datas)>0)   {
-                                 $attr_list=[];
-                                foreach($prod_datas as $row)  {
-                                    
-                                    $attr_list['sales_id']=$sale_id;
-                                    $attr_list['sales_item_id']=$create_saleorder;
-                                    $attr_list['prd_id']=$prod_data->product_id;
-                                    $attr_list['attr_id']=$row->attr_id;
-                                    $attr_list['attr_value_id']=$row->attr_val_id;
-                                    $attr_list['attr_name']=$row->PrdAttr->name;
-                                    $attr_list['attr_value']=$row->attrValue->name;
-                                    $attr_list['is_deleted']=0;
-                                    SalesOrderItemOption::create($attr_list);
-                                }
+                    if($associate)
+                    {
+                        $prod_datas = AssignedAttribute::where('is_deleted',0)->where('prd_id',$prod_data->product_id)->orderBy('attr_id','asc')->groupBy('attr_id')->get();
+                        
+                        if(count($prod_datas)>0)
+                        {
+                            $attr_list=[];
+                            
+                            foreach($prod_datas as $row)
+                            {       
+                                $attr_list['sales_id']=$sale_id;
+                                $attr_list['sales_item_id']=$create_saleorder;
+                                $attr_list['prd_id']=$prod_data->product_id;
+                                $attr_list['attr_id']=$row->attr_id;
+                                $attr_list['attr_value_id']=$row->attr_val_id;
+                                $attr_list['attr_name']=$row->PrdAttr->name;
+                                $attr_list['attr_value']=$row->attrValue->name;
+                                $attr_list['is_deleted']=0;
+                                SalesOrderItemOption::create($attr_list);
                             }
                         }
-                    }               
-                $cart_update= Cart::where('id',$prod_data->cart_id)->update([
-             'is_active'=>0,'updated_at'=>date("Y-m-d H:i:s")]);
+                    }
+                }               
+                $cart_update= Cart::where('id',$prod_data->cart_id)->update(['is_active'=>0,'updated_at'=>date("Y-m-d H:i:s")]);
 
-            $cart_item_update=CartItem::where('cart_id',$prod_data->cart_id)->update([
-            'is_active'=>0,
-            'updated_at'=>date("Y-m-d H:i:s")]);  
+                $cart_item_update=CartItem::where('cart_id',$prod_data->cart_id)->update(['is_active'=>0,'updated_at'=>date("Y-m-d H:i:s")]);  
 
-            $insert_cart_hist =  CartHistory::create(['org_id' => 1,
-                'user_id' => $user_id,
-                'product_id' => $prod_data->product_id,
-                'quantity'  => $prod_data->quantity,
-                'action'=>'ordered',
-                'is_active'=>1,
-                'is_deleted'=>0,
-                'created_by'=>$user_id,
-                'updated_by'=>$user_id,
-                'created_at'=>date("Y-m-d H:i:s"),
-                'updated_at'=>date("Y-m-d H:i:s")]);                                 
+                $insert_cart_hist =  CartHistory::create(['org_id' => 1,
+                    'user_id' => $user_id,
+                    'product_id' => $prod_data->product_id,
+                    'quantity'  => $prod_data->quantity,
+                    'action'=>'ordered',
+                    'is_active'=>1,
+                    'is_deleted'=>0,
+                    'created_by'=>$user_id,
+                    'updated_by'=>$user_id,
+                    'created_at'=>date("Y-m-d H:i:s"),
+                    'updated_at'=>date("Y-m-d H:i:s")]);
 
-       //$product[]=$prd_list;
-               }      //foreachend    
+                $product[]=$prd_list;
+            }      //foreachend    
 
        
             
             // Odoo integration
 
-              $headers[] = 'Content-Type: application/json';
-            if(authenticateOdoo()){
-              $headers[] = 'Cookie: '.authenticateOdoo();  
+            $headers[] = 'Content-Type: application/json';
+            if(authenticateOdoo())
+            {
+                $headers[] = 'Cookie: '.authenticateOdoo();  
             }
             
             // dd($base64_img);
 
-            $datapass = json_encode(array(
-            'jsonrpc'=>"2.0",
-            'method'=>"call",
-            'params'=>array(
-            'model'=>"sale.order",
-            'method'=>"create_sale_order",
-            'args'=>[[]],
-            'kwargs'=>array(
-                'vals'=>array(
-                    'bb_partner_id'=>$user_id,
-                    'ref_no'=>'#Test',
-                    'big_basket_id'=> $sale_id,
-                    'order_lines'=>$odoo_arr
-                )
-            ),
-            ),
-            )); 
+            // $datapass = json_encode(array(
+            //     'jsonrpc'=>"2.0",
+            //     'method'=>"call",
+            //     'params'=>array(
+            //         'model'=>"sale.order",
+            //         'method'=>"create_sale_order",
+            //         'args'=>[[]],
+            //         'kwargs'=>array(
+            //             'vals'=>array(
+            //                 'bb_partner_id'=>$user_id,
+            //                 'ref_no'=>'#Test',
+            //                 'big_basket_id'=> $sale_id,
+            //                 'order_lines'=>$odoo_arr
+            //             )
+            //         ),
+            //     ),
+            // ));            
+            
+            // print_r($product);
+            // echo "<br>";
+            // print_r($product[0]['product_id']);
+            // exit;
 
-             // dd($datapass);
-           $url_cust_reg = "http://3.109.84.120:7054/web/dataset/call_kw";
-           $handle = curl_init($url_cust_reg);
+            $datapass = json_encode(array(
+                'ModelPrevilege'=>'',
+                'Privileges'=>'',
+                'CategoryId'=>0,
+                'Part_Id'=>$product[0]['product_id'],
+                'SubPart_Id'=>0,
+                'InvoiceDate'=>'',
+                'Mode'=>'',
+                'POSInvoiceId'=>0,
+                'BranchId'=>0,
+                'DivisionId'=>0,
+                'CustomerId'=>0,
+                'FromDate'=>'',
+                'ToDate'=>'',
+                'OrganisationId'=>0,
+                'EmployeeId'=>0,
+                'EmployeeName'=>'',
+                'Template'=>'',
+                'User_Id'=>$user_id,
+                'POSInvoiceNumber'=>'',
+                'SearchKeyWord'=>'',
+                'SubTotal'=>'',
+                'IGSTTotal'=>0,
+                'CGSTTotal'=>0,
+                'SGSTTotal'=>0,
+                'TotalGST'=>0,
+                'Total'=>0,
+                'TotalTax'=>0,
+                'GrandTotal'=>0,
+                'Quantity'=>0,
+                'PartNumber'=>'',
+                'SellingPrice'=>0,
+                'CustomerName'=>'',
+                'PaymentStatus'=>'',
+                'PaymentTerms'=>'',
+                'Remarks'=>'',
+                'Branch_Name'=>'',
+                'Status'=>'',
+                'PageStatus'=>'',
+                'TenderCash'=>0,
+                'BalanceAmount'=>0,
+                'CurrentPage'=>0,
+                'PageSize'=>0,
+                'Count'=>0,
+                'Cash'=>0,
+                'CustomerCredit'=>0,
+                'DebitCard'=>0,
+                'DebitCardNo'=>0,
+                'DebitCardDate'=>0,
+                'MobilePayment'=>0,
+                'MobilePaymentType'=>'',
+                'POS_Status'=>'Created',
+                'DiscountType'=>0,
+                'DiscountValue'=>0.00,
+                'CreditNoteNumber'=>'',
+                'CreditAmount'=>0,
+                'CreditBalanceAmount'=>0,
+                'CustomerCode'=>'',
+                'Customer_ID'=>'',
+                'CustomerType'=>0,
+                'Company'=>'',
+                'Branch'=>'',
+                'GroupName'=>'',
+                'SubGroupName'=>'',
+                'CustomerViewModel'=>'',
+                'Owner'=>'',
+                'OwnerContactNo'=>'',
+                'OwnerSocialMediaNo'=>'',
+                'OwnerEmail'=>'',
+                'AccountNo'=>'',
+                'PAN'=>'',
+                'TIN'=>'',
+                'GSTNomber'=>'',
+                'POCDesignation'=>'',
+                'POCContactNo'=>'',
+                'BuildingName'=>'',
+                'Street'=>'',
+                'City'=>'',
+                'StateName'=>'',
+                'Route'=>'',
+                'PINCode'=>'',
+                'Country_Id'=>0,
+                'StateId'=>0,
+                'DistrictName'=>'',
+                'CustomerPOCName'=>'',
+                'POCSocialMediaNo'=>'',
+                'EmailID'=>'',
+                'MobileNo'=>'',
+                'BestTimeToContact'=>'',
+                'CustomerStatus'=>false,
+                'CustomerStatus1'=>'',
+                'Website'=>'',
+                'CreditNoteId'=>0,
+                'PortName'=>'',
+                'CounterUser'=>'',
+                'TableName'=>'',
+                'Counter'=>'',
+                'ItemsNo'=>0,
+                'TableId'=>0,
+                'MergeStatus'=>false,
+                'MergeInvoiceNumber'=>'',
+                'Table_Id'=>0,
+                'TableIds'=>'',
+                'Table_Ids'=>'',
+                'CategoryName'=>'',
+                'SundryDebtorsList'=>'',
+                'CustomerGroupList'=>'',
+                'CustomerSubGroupList'=>'',
+                'RouteList'=>'',
+                'StateList'=>'',
+                'CountryList'=>'',
+                'POSInvoiceList'=>'',
+                'TableList'=>'',
+                'TableList1'=>'',
+                'CustomerList'=>'',
+                'BranchList'=>'',
+                'InvoiceList'=>'',
+                'CustomerTypeList'=>'',
+                'DivisionList'=>'',
+                'PortList'=>'',
+                'State'=>'',
+                'CreditNoteList'=>'',
+                'PromoterList'=>'',
+                'PartCategoryList'=>'',
+                'PartList'=>'',
+                'POSInvoiceParts'=>array(
+                    'ModelPrevilege'=> '',
+                    'Privileges'=> '',
+                    'POSInvoicePartMapId'=> 0,
+                    'POSInvoiceId'=> 0,
+                    'Part_Id'=> $product[0]['product_id'],
+                    'SubProductID'=> 0,
+                    'SubProductCode'=> '',
+                    'SubProductName'=> '',
+                    'Discount'=> 0,
+                    'DiscountPercentage'=> 0,
+                    'AdditionalDiscount'=> 0,
+                    'TaxableAmount'=> 0,
+                    'AdditionalDiscountPercentage'=> 0,
+                    'IsPartDiscountAmount'=> false,
+                    'GST_Percentage'=> 0,
+                    'SellingPrice'=> 0,
+                    'IGST'=> 0,
+                    'IGSTAmount'=> 0,
+                    'CGST'=> 0,
+                    'CGSTAmount'=> 0,
+                    'SGST'=> 0,
+                    'SGSTAmount'=> 0,
+                    'Quantity'=> 1,
+                    'Colour'=> '',
+                    'Size'=> '',
+                    'UoM'=> '',
+                    'MRP'=> 0,
+                    'StockQty'=> 0,
+                    'Status'=> '',
+                    'Total'=> 0,
+                    'TotalTax'=> 0,
+                    'TotalAmount'=> 0,
+                    'PartNumber'=> 0,
+                    'FirstSizeQty'=> 0,
+                    'SecondSizeQty'=> 0,
+                    'ThirdSizeQty'=> 0,
+                    'ForthSizeQty'=> 0,
+                    'FifthSizeQty'=> 0,
+                    'Category_Name'=> '',
+                    'CategoryName'=> '',
+                    'PaymentStatus'=> '',
+                    'PartDescription'=> '',
+                    'HSNCode'=> '',
+                    'ArticleNo'=> '',
+                    'SizeRange'=> ''
+                ),
+                'BranchData'=>array(
+                    'BranchId'=> 0,
+                    'DivisionId'=> 0,
+                    'BranchName'=> '',
+                    'BranchFlag'=> '',
+                    'StateId'=> 0,
+                    'StateName'=> '',
+                    'DistrictId'=> 0,
+                    'DistrictName'=> '',
+                    'Street'=> '',
+                    'City'=> '',
+                    'Country'=> '',
+                    'PINCode'=> '',
+                    'BranchCode'=> '',
+                    'PageSize'=> 0,
+                    'CurrentPage'=> 0,
+                    'SearchKey'=> '',
+                    'Count'=> 0,
+                    'DelStatus'=> false,
+                    'GSTIN'=> '',
+                    'BankName'=> '',
+                    'IFSC_Code'=> '',
+                    'Bank_Branch'=> '',
+                    'AccountNo'=> '',
+                    'PhoneNumber'=> '',
+                    'EmailId'=> '',
+                    'List'=> '',
+                    'Flag'=> '',
+                    'DivisionName'=> '',
+                    'DivisionNameList'=> '',
+                    'DivisionBranchMappingId'=> 0,
+                    'Organisation'=> '',
+                    'OrganisationId'=> 0
+                ),
+                'CustomerData'=>''
+            ));
+
+            // dd($datapass);
+
+            $url_cust_reg = "http://20.212.51.46:8081/api/POSUSHAS/SavePOSInvoice";
+            $handle = curl_init($url_cust_reg);
             curl_setopt($handle, CURLOPT_POST, true);
             curl_setopt($handle, CURLOPT_POSTFIELDS, $datapass);
             curl_setopt($handle, CURLOPT_HTTPHEADER, $headers); 
@@ -1697,16 +2092,15 @@ public function placeorder(Request $request)
             $response = curl_exec($handle);
             curl_close($handle);
             $return_response = json_decode($response,true);
+
             // dd($return_response);
-            if(isset($return_response) && isset($return_response['result'])){
-            SaleOrder::where('id',$sale_id)->update(['odoo_id'=>$return_response['result']['sale_order_id']]);
-           }
 
-
-            
-             }return $prod_datas;
-           
-        
+            if(isset($return_response) && isset($return_response['Data']))
+            {
+                SaleOrder::where('id',$sale_id)->update(['crm_id'=>$return_response['Data']]);
+            }
+        }
+        return $prod_datas;
     }
 
 

@@ -13,7 +13,7 @@ class SettingOther extends Authenticatable
     use HasFactory, Notifiable;
     protected $table = 'settings_others';
 
-    protected $fillable = ['org_id','type','name','value', 'refund_deduction', 'return_period','bid_charge','mjs_fee','pg_fee','invite_save','invite_discount','valid_days','is_active','is_deleted','created_by','updated_by','created_at','updated_at'];
+    protected $fillable = ['org_id','type','name','value', 'refund_deduction', 'return_period','point_equivalent','bid_charge','mjs_fee','pg_fee','invite_save','invite_discount','valid_days','is_active','is_deleted','created_by','updated_by','created_at','updated_at'];
 
         static function getOtherSettings(){ 
             
@@ -26,7 +26,7 @@ class SettingOther extends Authenticatable
             $data['id']        =   $settings_list->id;
             $data['refund_deduction']       =   $settings_list->refund_deduction;
             $data['return_period']       =   $settings_list->return_period;
-           
+            $data['point_equivalent']       =   $settings_list->point_equivalent;
             $data['is_active']       =   $settings_list->is_active;
             $data['is_deleted']       =   $settings_list->is_deleted;
             $data['created_at']       =   $settings_list->created_at; 

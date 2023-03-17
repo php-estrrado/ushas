@@ -71,6 +71,7 @@
 																	<th class="border-bottom-0 w-30">Customer Name</th>
 																	<th class="border-bottom-0 w-30">Contact number</th>
                                                                     <th class="border-bottom-0 w-30">Email</th>
+                                                                    <th class="border-bottom-0 w-30">Customer Category</th>
 																	<th class="border-bottom-0 w-20">Created On</th>
 																	<th class="border-bottom-0 w-30 notexport">Actions</th>
 																</tr>
@@ -97,11 +98,12 @@
 																	</td>
 																	<td class="align-middle">
 																		<div class="d-flex">
-																		<h6 class=" font-weight-bold">{{@$name->first_name." ".@$name->middle_name." ".@$name->last_name}}</h6>
+                                                                        <h6 class=" font-weight-bold">{{$row->first_name." ".$row->middle_name." ".$row->last_name}}</h6>
+																		<!-- <h6 class=" font-weight-bold">{{@$name->first_name." ".@$name->middle_name." ".@$name->last_name}}</h6> -->
                                                                         </div>
 																	</td>
-																	<td class="text-nowrap align-middle"><p style="overflow: hidden;white-space: nowrap;text-overflow: ellipsis; max-width: 100px;"> </p></td>
-                                                                        <td class="text-nowrap align-middle"><p style="overflow: hidden;white-space: nowrap;text-overflow: ellipsis; max-width: 200px;"></p>
+																	<td class="text-nowrap align-middle"><p style="overflow: hidden;white-space: nowrap;text-overflow: ellipsis; max-width: 100px;">{{ $row->usr_telecom_value}}</p></td>
+                                                                        <td class="text-nowrap align-middle"><p style="overflow: hidden;white-space: nowrap;text-overflow: ellipsis; max-width: 200px;">{{ $row->username}}</p>
 																	</td>
 																	<!--<td class="text-nowrap align-middle">-->
 																	<!--    <div class="switch">-->
@@ -112,9 +114,14 @@
                  <!--                                                           </label>-->
                  <!--                                                       </div>-->
 																	<!--</td>-->
+																	<td class="text-nowrap align-middle">
+																		@if($row->crm_customer_type == 1)
+																		@else
+																			SP
+																		@endif
+																	</td>
 																	<td class="text-nowrap align-middle"><span>{{date('d M Y',strtotime($row->created_at))}}</span></td>
-                                                                    <td class="align-middle">
-																		<div class="btn-group align-top">
+																	<td>
 																			<a href="{{ url('admin/customer/view/') }}/{{$row->id}}"   class="btn btn-sm btn-primary mr-2"><i class="fe fe-eye mr-1"></i> view</a>
 																			{{-- <button  class="btn btn-sm btn-secondary deletecategory" type="button" onclick="delete_cat({{ $row->id}})" data-toggle="modal" data-target="#del_modal"><i class="fe fe-trash-2"></i>Delete</button> --}}
 																		</div>

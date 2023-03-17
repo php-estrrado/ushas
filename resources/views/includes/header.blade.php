@@ -1,6 +1,6 @@
 @php
     if(auth()->user()->avatar == NULL){ $avatar = url('storage/app/public/no-avatar.png'); }
-    else{ $avatar = url('storage'.auth()->user()->avatar); }
+    else{ $avatar = config('app.url').'/storage'.auth()->user()->avatar;  }
 @endphp
 <!--app header-->
 						<div class="app-header header">
